@@ -29,8 +29,8 @@ Using:
 
 Validated totals:
 - NIKE-128 total = 2752
-- NIKE-192 total = 3072
-- NIKE-256 total = 3136
+- NIKE-192 total = 2944
+- NIKE-256 total = 3008
 - NIKE-384 total = 6080
 - NIKE-512 total = 6208
 
