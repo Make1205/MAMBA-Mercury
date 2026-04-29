@@ -38,6 +38,20 @@ static void self_tests(){
   memset(&a,0,sizeof(a)); a.coeffs[1]=1; rand_poly(&b); nike_mul_schoolbook(&d,&a,&b,&NIKE_256); nike_mul_coeff_ntt(&c,&a,&b); ok=!memcmp(&d,&c,sizeof(poly)); printf("NTT special a=X: %s\n",ok?"PASS":"FAIL");
   memset(&a,0,sizeof(a)); memset(&b,0,sizeof(b)); a.coeffs[PARAM_N-1]=1; b.coeffs[1]=1; nike_mul_coeff_ntt(&c,&a,&b); ok=(c.coeffs[0]==PARAM_Q-1); printf("NTT special X^{n-1}*X=-1: %s\n",ok?"PASS":"FAIL");
 
+  uint16_t a2[2048],b2[2048],o2[2048],ref2[2048],tmp2[2048];
+  ok=1; for(int t=0;t<100;t++){ for(int i=0;i<2048;i++) a2[i]=rand()%PARAM_Q; memcpy(tmp2,a2,sizeof(a2)); nike_cyclic_ntt_n(tmp2,2048); nike_cyclic_intt_n(tmp2,2048); for(int i=0;i<2048;i++) if(a2[i]!=tmp2[i]){ok=0;break;} if(!ok) break; }
+  printf("n=2048 cyclic NTT roundtrip (100): %s\n",ok?"PASS":"FAIL");
+  printf("primitive psi (n=2048): %u\n", nike_ntt_psi_n(2048));
+  uint16_t psi=nike_ntt_psi_n(2048); uint16_t q=PARAM_Q; 
+  uint16_t pown=1,pow2n=1,omega=1,pown2=1; for(int i=0;i<2048;i++) pown=(uint32_t)pown*psi%q; for(int i=0;i<4096;i++) pow2n=(uint32_t)pow2n*psi%q; omega=(uint32_t)psi*psi%q; for(int i=0;i<2048;i++) pown2=(uint32_t)pown2*omega%q; 
+  printf("n=2048 root sanity: %s\n", (pown==q-1 && pow2n==1 && pown2==1)?"PASS":"FAIL");
+  ok=1; for(int t=0;t<20;t++){ static int64_t acc2[2048]; for(int i=0;i<2048;i++){ a2[i]=rand()%PARAM_Q; b2[i]=rand()%PARAM_Q; acc2[i]=0; tmp2[i]=a2[i]; o2[i]=b2[i]; } nike_cyclic_ntt_n(tmp2,2048); nike_cyclic_ntt_n(o2,2048); for(int i=0;i<2048;i++) tmp2[i]=(uint32_t)tmp2[i]*o2[i]%PARAM_Q; nike_cyclic_intt_n(tmp2,2048); for(int i=0;i<2048;i++) for(int j=0;j<2048;j++){ int k=i+j; int64_t v=(int64_t)a2[i]*b2[j]; if(k<2048) acc2[k]+=v; else acc2[k-2048]+=v; } for(int i=0;i<2048;i++){ int64_t z=acc2[i]%PARAM_Q; if(z<0) z+=PARAM_Q; if(tmp2[i]!=(uint16_t)z){ ok=0; break; } } if(!ok) break; }
+  printf("n=2048 cyclic convolution theorem (20): %s\n",ok?"PASS":"FAIL");
+  for(int i=0;i<2048;i++) b2[i]=rand()%PARAM_Q; memset(a2,0,sizeof(a2)); a2[0]=1; nike_mul_negacyclic_ntt_n(o2,a2,b2,2048); ok=1; for(int i=0;i<2048;i++) if(o2[i]!=b2[i]) ok=0; printf("n=2048 special a=1: %s\n",ok?"PASS":"FAIL");
+  memset(a2,0,sizeof(a2)); a2[1]=1; nike_mul_negacyclic_ntt_n(o2,a2,b2,2048); ok=(o2[0]==(PARAM_Q-b2[2047])%PARAM_Q); for(int i=1;i<2048&&ok;i++) if(o2[i]!=b2[i-1]) ok=0; printf("n=2048 special a=X: %s\n",ok?"PASS":"FAIL");
+  memset(a2,0,sizeof(a2)); memset(b2,0,sizeof(b2)); a2[2047]=1; b2[1]=1; nike_mul_negacyclic_ntt_n(o2,a2,b2,2048); ok=(o2[0]==PARAM_Q-1); for(int i=1;i<2048&&ok;i++) if(o2[i]!=0) ok=0; printf("n=2048 special X^{n-1}*X=-1: %s\n",ok?"PASS":"FAIL");
+  ok=1; for(int t=0;t<20;t++){ static int64_t acc[2048]; for(int i=0;i<2048;i++){ a2[i]=rand()%PARAM_Q; b2[i]=rand()%PARAM_Q; acc[i]=0; } for(int i=0;i<2048;i++) for(int j=0;j<2048;j++){ int k=i+j; int64_t v=(int64_t)a2[i]*b2[j]; if(k<2048) acc[k]+=v; else acc[k-2048]-=v; } for(int i=0;i<2048;i++){ int64_t z=acc[i]%PARAM_Q; if(z<0) z+=PARAM_Q; ref2[i]=(uint16_t)z; } nike_mul_negacyclic_ntt_n(o2,a2,b2,2048); int mism=0,maxd=0,first=-1; for(int i=0;i<2048;i++){ int d=centered((int)o2[i]-(int)ref2[i]); if(d<0) d=-d; if(d>maxd) maxd=d; if(o2[i]!=ref2[i]){ mism++; if(first<0) first=i; }} if(mism){ ok=0; printf("n=2048 mismatch test=%d idx=%d ref=%u got=%u diff=%d mism=%d maxabs=%d\n",t,first,ref2[first],o2[first],centered((int)o2[first]-(int)ref2[first]),mism,maxd); printf("a[0..7]="); for(int i=0;i<8;i++) printf(" %u",a2[i]); printf("\n"); printf("b[0..7]="); for(int i=0;i<8;i++) printf(" %u",b2[i]); printf("\n"); printf("ref[0..7]="); for(int i=0;i<8;i++) printf(" %u",ref2[i]); printf("\n"); printf("ntt[0..7]="); for(int i=0;i<8;i++) printf(" %u",o2[i]); printf("\n"); break; } }
+  printf("n=2048 NTT vs schoolbook (20): %s\n",ok?"PASS":"FAIL");
 }
 
 static int run_mode_once(const nike_params *p,int mode){
