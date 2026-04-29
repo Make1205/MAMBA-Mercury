@@ -12,6 +12,9 @@ const nike_params NIKE_256={"NIKE-256",11,11,6,256};
 const nike_params NIKE_384={"NIKE-384",11,11,6,384};
 const nike_params NIKE_512={"NIKE-512",11,11,6,512};
 
+static nike_mul_backend g_backend = NIKE_MUL_BACKEND_NTT;
+void nike_set_mul_backend(nike_mul_backend backend){ g_backend = backend; }
+
 size_t nike_ma_bytes(const nike_params *p){ return 32 + PARAM_N*p->t_pk/8; }
 size_t nike_mb_bytes(const nike_params *p){ return 32 + PARAM_N*p->t_u/8 + p->kappa; }
 
@@ -22,7 +25,11 @@ static void domain_uniform(poly *r,const unsigned char *seed,const char *tag){ u
 
 void nike_gen_public(poly *a, poly *dpk, const unsigned char rho[32]){ domain_uniform(a,rho,"NIKE-A"); domain_uniform(dpk,rho,"NIKE-DPK"); }
 void nike_gen_dither(poly *du, poly *dv, const unsigned char mu[32]){ domain_uniform(du,mu,"NIKE-DU"); domain_uniform(dv,mu,"NIKE-DV"); }
-void nike_mul_coeff(poly *out,const poly *a,const poly *b){ poly ta=*a,tb=*b; poly_ntt(&ta); poly_ntt(&tb); poly_pointwise(out,&ta,&tb); poly_invntt(out); }
+void nike_mul_coeff_ntt(poly *out,const poly *a,const poly *b){ poly ta=*a,tb=*b; poly_ntt(&ta); poly_ntt(&tb); poly_pointwise(out,&ta,&tb); poly_invntt(out); for(int i=0;i<PARAM_N;i++){ out->coeffs[i]%=PARAM_Q; }}
+
+void nike_mul_schoolbook(poly *out, const poly *a, const poly *b, const nike_params *params){ (void)params; int64_t acc[PARAM_N]={0}; for(int i=0;i<PARAM_N;i++){ for(int j=0;j<PARAM_N;j++){ int k=i+j; int64_t v=(int64_t)a->coeffs[i]*(int64_t)b->coeffs[j]; if(k<PARAM_N) acc[k]+=v; else acc[k-PARAM_N]-=v; } } for(int i=0;i<PARAM_N;i++){ int64_t v=acc[i]%PARAM_Q; if(v<0) v+=PARAM_Q; out->coeffs[i]=(uint16_t)v; }}
+
+void nike_mul_coeff(poly *out,const poly *a,const poly *b){ if(g_backend==NIKE_MUL_BACKEND_SCHOOLBOOK) nike_mul_schoolbook(out,a,b,&NIKE_256); else nike_mul_coeff_ntt(out,a,b); }
 
 void nike_init(nike_state *st, unsigned char *M_A, const nike_params *p){ unsigned char rho[32],noise[32]; poly a,dpk,tmp,b; randombytes(rho,32); randombytes(noise,32); st->p=*p; nike_gen_public(&a,&dpk,rho); poly_getnoise(&st->s,noise,0); nike_mul_coeff(&tmp,&a,&st->s); poly_quantize(&b,&tmp,&dpk,p->t_pk); memcpy(M_A,rho,32); nike_pack_bits(M_A+32,&b,p->t_pk); }
 
