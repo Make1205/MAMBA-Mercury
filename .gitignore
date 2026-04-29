@@ -12,3 +12,14 @@ avx2/test/test_statistical
 avx2/test/testvectors
 avx2/test/speed
 avx2/test/test_nike_avx2
+dist/
+*.o
+*.a
+*.so
+*.exe
+API_PKC/build/
+API_PKC/output/
+API_PKC/build_ref_*
+API_PKC/build_opt_*
+API_PKC/*.o
+API_PKC/**/*.o
