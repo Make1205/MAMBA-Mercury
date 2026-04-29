@@ -3,11 +3,21 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "poly.h"
+#include "nike_poly.h"
 
 typedef struct {
   const char *name;
+  unsigned classic;
+  unsigned quantum;
+  unsigned n;
+  unsigned q;
+  unsigned eta_s;
+  unsigned eta_r;
   unsigned t_pk, t_u, t_v;
   unsigned kappa;
+  unsigned ss_bytes;
+  unsigned ma_bytes;
+  unsigned mb_bytes;
 } nike_params;
 
 typedef struct { poly s; nike_params p; } nike_state;

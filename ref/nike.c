@@ -7,11 +7,11 @@
 #include "nike_ntt.h"
 #include <string.h>
 
-const nike_params NIKE_128={"NIKE-128",10,10,6,128};
-const nike_params NIKE_192={"NIKE-192",11,11,6,192};
-const nike_params NIKE_256={"NIKE-256",11,11,6,256};
-const nike_params NIKE_384={"NIKE-384",11,11,6,384};
-const nike_params NIKE_512={"NIKE-512",11,11,6,512};
+const nike_params NIKE_128={"NIKE-128",128,80,1024,12289,5,5,10,10,6,128,16,1312,1440};
+const nike_params NIKE_192={"NIKE-192",192,96,1024,12289,5,5,11,11,6,192,24,1440,1632};
+const nike_params NIKE_256={"NIKE-256",256,128,1024,12289,5,5,11,11,6,256,32,1440,1696};
+const nike_params NIKE_384={"NIKE-384",384,192,2048,12289,5,5,11,11,6,384,48,2848,3232};
+const nike_params NIKE_512={"NIKE-512",512,256,2048,12289,5,5,11,11,6,512,64,2848,3360};
 
 static nike_mul_backend g_backend = NIKE_MUL_BACKEND_NTT;
 void nike_set_mul_backend(nike_mul_backend backend){ g_backend = backend; }
