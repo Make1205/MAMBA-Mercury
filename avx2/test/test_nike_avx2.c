@@ -4,7 +4,7 @@
 #include "../cpucycles.h"
 #include "../../ref/nike.h"
 
-static void run_profile(const nike_params *p, unsigned iters, const char *impl) {
+static void run_profile(const nike_params *p, unsigned iters) {
   unsigned char MA[4096], MB[4096], KA[64], KB[64];
   nike_state st;
   unsigned ok=0;
@@ -16,6 +16,7 @@ static void run_profile(const nike_params *p, unsigned iters, const char *impl) 
     c0=cpucycles(); nike_derive(KA,&st,MA,MB); c1=cpucycles(); derive_sum += (c1-c0);
     if(memcmp(KA,KB,p->ss_bytes)==0) ok++;
   }
+  const char *impl = (p->n==1024)?"avx2-native":"avx2-mixed";
   printf("%s,%s,%s,%llu,%llu,%llu,%zu,%zu,%zu,%u\n",
     p->name, impl, (ok==iters?"success":"fail"),
     init_sum/iters, resp_sum/iters, derive_sum/iters,
@@ -24,14 +25,12 @@ static void run_profile(const nike_params *p, unsigned iters, const char *impl) 
 
 int main(int argc, char **argv){
   unsigned iters=1000;
-  const char *impl="avx2-mixed";
   if(argc>1) iters=(unsigned)strtoul(argv[1],NULL,10);
-  if(argc>2) impl=argv[2];
   printf("profile,implementation,correctness,init_cycles,resp_cycles,derive_cycles,MA_bytes,MB_bytes,total_bytes,ss_bytes\n");
-  run_profile(&NIKE_128,iters,impl);
-  run_profile(&NIKE_192,iters,impl);
-  run_profile(&NIKE_256,iters,impl);
-  run_profile(&NIKE_384,iters,impl);
-  run_profile(&NIKE_512,iters,impl);
+  run_profile(&NIKE_128,iters);
+  run_profile(&NIKE_192,iters);
+  run_profile(&NIKE_256,iters);
+  run_profile(&NIKE_384,iters);
+  run_profile(&NIKE_512,iters);
   return 0;
 }

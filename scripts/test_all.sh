@@ -15,7 +15,7 @@ AVX2_STATUS="ok"
 AVX2_IMPL="avx2"
 AVX2_CSV="$BUILD_DIR/avx2_nike_bench.csv"
 if make -C "$ROOT_DIR/avx2" test/test_nike_avx2 >/dev/null 2>&1; then
-  "$ROOT_DIR/avx2/test/test_nike_avx2" "$ITERS" avx2-mixed > "$AVX2_CSV" || AVX2_STATUS="run_failed"
+  "$ROOT_DIR/avx2/test/test_nike_avx2" "$ITERS" > "$AVX2_CSV" || AVX2_STATUS="run_failed"
   AVX2_IMPL="avx2-mixed"
 else
   AVX2_STATUS="build_failed"
