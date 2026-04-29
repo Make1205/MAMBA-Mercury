@@ -2,10 +2,10 @@
 
 This package contains the MAMBA-NIKE KEX submission implementation and is self-contained under `API_PKC/`.
 
-- `Implementations/Reference_Implementation` maps to the reference NIKE implementation.
-- `Implementations/Optimized_Implementation` maps to the optimized NIKE implementation.
+- `Implementations/Reference_Implementation` maps to the repository `ref/` NIKE implementation (packaged locally in API_PKC).
+- `Implementations/Optimized_Implementation` maps to the repository `avx2/` NIKE implementation (packaged locally in API_PKC).
 - Optimized status: NIKE-128/192/256 are avx2-native; NIKE-384/512 are avx2-mixed fallback.
-- Protocol is 2-pass KEX: `M_A=rho||b`, `M_B=mu||u||h`, `v` local-only.
+- Protocol is 2-pass KEX: `M_A=rho||b`, `M_B=mu||u||h`, `v` is local and not transmitted.
 - RLWQ-Z coefficient-domain quantization and D4 reconciliation are retained.
 - helper size = kappa bytes.
 
