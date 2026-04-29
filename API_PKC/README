@@ -1,0 +1,35 @@
+# API_PKC
+
+This directory contains API-facing packaging for the MAMBA-NIKE submission artifacts.
+
+NIKE was previously developed under the working name Mercury.
+
+## Scope of this update
+
+This update only normalizes directory layout and formal naming under `API_PKC/`.
+It does **not** perform KEX interface adaptation, KAT regeneration/validation, or
+algorithm-core mathematical/parameter changes.
+
+## Target layout
+
+```
+API_PKC/
+├── README
+├── Implementations/
+│   ├── README
+│   ├── Reference_Implementation/
+│   ├── Optimized_Implementation/
+│   └── Additional_Implementation/
+└── Test_Vectors/
+```
+
+## Formal instance set (target)
+
+- MAMBA-NIKE-128
+- MAMBA-NIKE-192
+- MAMBA-NIKE-256
+- MAMBA-NIKE-384
+- MAMBA-NIKE-512
+
+If a target level is not present yet in this repository snapshot, it must be
+reported as a blocking issue rather than represented by placeholder instances.
