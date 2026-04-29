@@ -1,20 +1,9 @@
 #include "poly.h"
 #include "ntt.h"
 #include "randombytes.h"
+#include "reduce.h"
 #include "fips202.h"
-#include "crypto_stream.h"
-
-static const unsigned char nonce[8] = {0};
-
-static uint16_t barrett_reduce(uint16_t a)
-{
-  uint32_t u;
-
-  u = ((uint32_t) a * 5) >> 16;
-  u *= PARAM_Q;
-  a -= u;
-  return a;
-}
+#include "crypto_stream_chacha20.h"
 
 void poly_frombytes(poly *r, const unsigned char *a)
 {
@@ -70,8 +59,6 @@ void poly_tobytes(unsigned char *r, const poly *p)
   }
 }
 
-
-
 void poly_uniform(poly *a, const unsigned char *seed)
 {
   unsigned int pos=0, ctr=0;
@@ -100,52 +87,64 @@ void poly_uniform(poly *a, const unsigned char *seed)
 }
 
 
-extern void cbd(poly *r, unsigned char *b);
-
 void poly_getnoise(poly *r, unsigned char *seed, unsigned char nonce)
 {
 #if PARAM_K != 16
 #error "poly_getnoise in poly.c only supports k=16"
 #endif
-  unsigned char buf[4*PARAM_N];
-  unsigned char n[CRYPTO_STREAM_NONCEBYTES];
-  int i;
 
-  for(i=1;i<CRYPTO_STREAM_NONCEBYTES;i++)
+  unsigned char buf[4*PARAM_N];
+  uint32_t *tp, t,d, a, b;
+  unsigned char n[8];
+  int i,j;
+
+  tp = (uint32_t *) buf;
+
+  for(i=1;i<8;i++)
     n[i] = 0;
   n[0] = nonce;
 
-  crypto_stream(buf,4*PARAM_N,n,seed);
-  cbd(r,buf);
+  crypto_stream_chacha20(buf,4*PARAM_N,n,seed);
+
+  for(i=0;i<PARAM_N;i++)
+  {
+    t = tp[i];
+    d = 0;
+    for(j=0;j<8;j++)
+      d += (t >> j) & 0x01010101;
+    a = ((d >> 8) & 0xff) + (d & 0xff);
+    b = (d >> 24) + ((d >> 16) & 0xff);
+    r->coeffs[i] = a + PARAM_Q - b;
+  }
 }
 
 void poly_pointwise(poly *r, const poly *a, const poly *b)
 {
   int i;
+  uint16_t t;
   for(i=0;i<PARAM_N;i++)
-    r->coeffs[i] = a->coeffs[i] * b->coeffs[i] % PARAM_Q; /* XXX: Get rid of the % here! */
+  {
+    t       = montgomery_reduce(3186*b->coeffs[i]); /* t is now in Montgomery domain */
+    r->coeffs[i] = montgomery_reduce(a->coeffs[i] * t); /* r->coeffs[i] is back in normal domain */
+  }
 }
 
 void poly_add(poly *r, const poly *a, const poly *b)
 {
   int i;
   for(i=0;i<PARAM_N;i++)
-    r->coeffs[i] = a->coeffs[i] + b->coeffs[i] % PARAM_Q; /* XXX: Get rid of the % here! */
+    r->coeffs[i] = barrett_reduce(a->coeffs[i] + b->coeffs[i]);
 }
 
 void poly_ntt(poly *r)
 {
-  double temp[PARAM_N];
-
-  pwmul_double(r->coeffs, psis_bitrev);
-  ntt_double(r->coeffs,omegas_double,temp);
+  mul_coefficients(r->coeffs, psis_bitrev_montgomery); 
+  ntt((uint16_t *)r->coeffs, omegas_montgomery);
 }
 
 void poly_invntt(poly *r)
 {
-  double temp[PARAM_N];
-
   bitrev_vector(r->coeffs);
-  ntt_double(r->coeffs, omegas_inv_double,temp);
-  pwmul_double(r->coeffs, psis_inv);
+  ntt((uint16_t *)r->coeffs, omegas_inv_montgomery);
+  mul_coefficients(r->coeffs, psis_inv_montgomery);
 }

@@ -5,7 +5,7 @@
 #include "params.h"
 
 typedef struct {
-  int32_t coeffs[PARAM_N];
+  uint16_t coeffs[PARAM_N];
 } poly __attribute__ ((aligned (32)));
 
 void poly_uniform(poly *a, const unsigned char *seed);
