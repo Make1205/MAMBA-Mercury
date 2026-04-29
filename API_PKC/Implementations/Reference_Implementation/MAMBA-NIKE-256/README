@@ -1,0 +1,4 @@
+# MAMBA-NIKE-256 Reference Instance
+
+This instance is materialized from repository reference NIKE sources under
+src/ and adapted to API_PKC KEX interface wrappers.
