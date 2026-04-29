@@ -1,2 +1,7 @@
+build/
 ref/test/test_nike_ref
 ref/test/*_test
+ref/test/test_newhope
+ref/test/test_statistical
+ref/test/testvectors
+ref/test/speed
