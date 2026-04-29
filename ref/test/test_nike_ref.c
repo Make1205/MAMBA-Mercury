@@ -91,4 +91,8 @@ static void nike_poly_layer_tests(){
   for(int pi=0;pi<5;pi++){ const nike_params*p=arr[pi]; uint8_t seed[32]={9}; nike_poly_gen_public(&a,&b,seed,p); nike_poly_gen_public(&c,&d,seed,p); printf("nike_poly gen public %s: %s\n",p->name,nike_poly_equal(&a,&c,p)&&nike_poly_equal(&b,&d,p)?"PASS":"FAIL"); nike_poly_gen_dither(&a,&b,seed,p); nike_poly_gen_dither(&c,&d,seed,p); printf("nike_poly gen dither %s: %s\n",p->name,nike_poly_equal(&a,&c,p)&&nike_poly_equal(&b,&d,p)?"PASS":"FAIL"); }
 }
 
-int main(){ self_tests(); nike_poly_layer_tests(); run(&NIKE_128); run(&NIKE_192); run(&NIKE_256); return 0; }
+int main(){
+  printf("Supported full KE profiles: NIKE-128, NIKE-192, NIKE-256\n");
+  printf("Future profiles: NIKE-384, NIKE-512\n");
+  printf("NIKE-384/512 full KE disabled until NIKE-native n=2048 main flow is enabled.\n");
+  self_tests(); nike_poly_layer_tests(); run(&NIKE_128); run(&NIKE_192); run(&NIKE_256); return 0; }

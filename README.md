@@ -1,51 +1,48 @@
-# MAMBA-NIKE (based on NewHope reference code)
+# MAMBA-NIKE Reference Implementation
 
-This repository is being migrated from the original NewHope reference structure to **MAMBA-NIKE**.
+This repository now uses **MAMBA-NIKE** as the active reference path.
 
-## Design status
+It is derived from the NewHope code structure, but the protocol identity and active path are NIKE-oriented.
 
-The current implementation keeps the NewHope code layout and core arithmetic stack (`q = 12289`, NTT-based polynomial multiplication, and NewHope-style D4 reconciliation), while introducing the MAMBA-NIKE protocol naming and parameter presets.
+## Active full-KE profiles
+- NIKE-128 (n=1024)
+- NIKE-192 (n=1024)
+- NIKE-256 (n=1024)
 
-## MAMBA-NIKE protocol direction
+## Future profiles
+- NIKE-384 (n=2048)
+- NIKE-512 (n=2048)
 
-- Keep NewHope-style two-pass key exchange flow.
-- Keep D4 reconciliation (`HelpRec`, `Rec`) as the raw-key reconciliation core.
-- Replace explicit additive noise layers at `b`, `u`, `v` with RLWQ-Z public dither quantization/dequantization.
-- Do **not** send `v`; only send:
-  - `M_A = (rho, b)`
-  - `M_B = (mu, u, h)`
-- Main compression points are `b` and `u`.
+NIKE-384/512 full KE is currently disabled until NIKE-native n=2048 main-flow migration is completed.
 
-## Parameter instances (temporary engineering presets)
+## Arithmetic readiness
+- `q = 12289` for all NIKE profiles.
+- Clean coefficient-domain NTT arithmetic tests pass for `n=1024` and `n=2048`.
+- Note: n=2048 arithmetic readiness does **not** mean NIKE-384/512 full KE is enabled.
 
-| Instance | n | q | t_pk | t_u | t_v | eta_s | eta_r | kappa |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| NIKE-128 | 1024 | 12289 | 10 | 10 | 6 | 5 | 5 | 128 |
-| NIKE-192 | 1024 | 12289 | 11 | 11 | 6 | 5 | 5 | 192 |
-| NIKE-256 | 1024 | 12289 | 11 | 11 | 6 | 5 | 5 | 256 |
-| NIKE-384 | 2048 | 12289 | 11 | 11 | 6 | 5 | 5 | 384 |
-| NIKE-512 | 2048 | 12289 | 11 | 11 | 6 | 5 | 5 | 512 |
+## Protocol structure (retained)
+- D4 reconciliation is retained.
+- RLWQ-Z public dither quantization replaces explicit additive-noise injection at `b/u/v` layers.
+- `v` is local-only and is not transmitted.
 
-Definitions:
+Messages:
+- `M_A = (rho, b)`
+- `M_B = (mu, u, h)`
 
-- `p_pk = 1 << t_pk`
-- `p_u  = 1 << t_u`
-- `p_v  = 1 << t_v`
+## Message sizes
+Using:
+- `|M_A| = 32 + n*t_pk/8`
+- `|M_B| = 32 + n*t_u/8 + kappa`
 
-## NTT split requirement
+Current validated active totals:
+- NIKE-128 total = 2752
+- NIKE-192 total = 3072
+- NIKE-256 total = 3136
 
-- `NIKE-128/192/256` use the existing `n=1024` path.
-- `NIKE-384/512` require a separate `n=2048` negacyclic NTT path under `q=12289`.
-- `n=1024` and `n=2048` root tables/schedules/constants must be separated.
-
-## Message sizes (target)
-
-- NIKE-128: `|M_A|=1312`, `|M_B|=1440`, total `2752`
-- NIKE-192: `|M_A|=1440`, `|M_B|=1600`, total `3040`
-- NIKE-256: `|M_A|=1440`, `|M_B|=1664`, total `3104`
-- NIKE-384: `|M_A|=2848`, `|M_B|=3232`, total `6080`
-- NIKE-512: `|M_A|=2848`, `|M_B|=3360`, total `6208`
-
-## Security-note
-
-These presets are currently temporary engineering parameters and are expected to be revised after DFR measurement and lattice-estimator based security re-evaluation.
+## Shared-secret length
+Variable output KDF is used (`ss_bytes = classic/8`):
+- NIKE-128 = 16
+- NIKE-192 = 24
+- NIKE-256 = 32
+- NIKE-384 = 48 (future profile)
+- NIKE-512 = 64 (future profile)
