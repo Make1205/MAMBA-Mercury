@@ -34,7 +34,7 @@ static void self_tests(){
   printf("primitive psi (n=1024): %u\n", nike_ntt_psi());
   rand_poly(&a); rand_poly(&b); nike_mul_schoolbook(&d,&a,&b,&NIKE_256); nike_mul_coeff_ntt(&c,&a,&b); ok=!memcmp(&c,&d,sizeof(poly));
   printf("NTT mul vs schoolbook(1 sample): %s\n",ok?"PASS":"FAIL");
-  for(int ki=0;ki<3;ki++){ unsigned kappa=(ki==0)?128:(ki==1)?192:256; unsigned char key1[32]={0},key2[32]={0},no[32]={0}; rand_poly(&a); helprec_kappa(&b,&a,no,0,kappa); rec_kappa(key1,&a,&b,kappa); rec_kappa(key2,&a,&b,kappa); printf("D4 identity kappa=%u: %s\n",kappa,memcmp(key1,key2,32)?"FAIL":"PASS"); }
+  for(int ki=0;ki<5;ki++){ unsigned kappa=(ki==0)?128:(ki==1)?192:(ki==2)?256:(ki==3)?384:512; unsigned char key1[32]={0},key2[32]={0},no[32]={0}; rand_poly(&a); helprec_kappa(&b,&a,no,0,kappa); rec_kappa(key1,&a,&b,kappa); rec_kappa(key2,&a,&b,kappa); printf("D4 identity kappa=%u: %s\n",kappa,memcmp(key1,key2,32)?"FAIL":"PASS"); }
   ok=1; for(int t=0;t<100;t++){ rand_poly(&a); rand_poly(&b); nike_mul_schoolbook(&d,&a,&b,&NIKE_256); nike_mul_coeff_ntt(&c,&a,&b); for(int i=0;i<PARAM_N;i++){ if(d.coeffs[i]!=c.coeffs[i]){ printf("ntt mismatch idx=%d ref=%u got=%u diff=%d\n",i,d.coeffs[i],c.coeffs[i],centered((int)c.coeffs[i]-(int)d.coeffs[i])); ok=0; t=100; break; } } }
   printf("NTT mul vs schoolbook (100 pairs): %s\n",ok?"PASS":"FAIL");
 
@@ -67,15 +67,24 @@ static int run_mode_once(const nike_params *p,int mode){
  helprec_kappa(&b,&vhat,n,2,p->kappa); rec_kappa(k1,&vhat,&b,p->kappa); nike_mul_coeff(&w,&uhat,&s); rec_kappa(k2,&w,&b,p->kappa); return memcmp(k1,k2,p->ss_bytes)==0;
 }
 
+
+static int run_mode_once_native(const nike_params *p){
+  nike_state st; unsigned char MA[4096]={0}, MB[4096]={0}, KA[64]={0}, KB[64]={0};
+  nike_init(&st, MA, p);
+  nike_resp(MB, KB, MA, p);
+  nike_derive(KA, &st, MA, MB);
+  return memcmp(KA,KB,p->ss_bytes)==0;
+}
+
 static void run_backend(const nike_params *p, nike_mul_backend be,const char*name){
   nike_set_mul_backend(be);
   printf("backend=%s %s\n",name,p->name);
-  for(int m=0;m<4;m++){ int ok=0; for(int i=0;i<1000;i++) ok+=run_mode_once(p,m); printf("%s mode%d success %d/1000\n",p->name,m,ok);}
+  for(int m=0;m<4;m++){ int ok=0; for(int i=0;i<1000;i++) ok += (p->n==2048 ? run_mode_once_native(p) : run_mode_once(p,m)); printf("%s mode%d success %d/1000\n",p->name,m,ok);}
   printf("ss_bytes=%u |M_A|=%zu |M_B|=%zu total=%zu\n",p->ss_bytes,nike_ma_bytes(p),nike_mb_bytes(p),nike_ma_bytes(p)+nike_mb_bytes(p));
 }
 
 static void run(const nike_params *p){
-  run_backend(p,NIKE_MUL_BACKEND_SCHOOLBOOK,"schoolbook");
+  if(p->n==1024) run_backend(p,NIKE_MUL_BACKEND_SCHOOLBOOK,"schoolbook");
   run_backend(p,NIKE_MUL_BACKEND_NTT,"ntt");
 }
 
@@ -92,7 +101,5 @@ static void nike_poly_layer_tests(){
 }
 
 int main(){
-  printf("Supported full KE profiles: NIKE-128, NIKE-192, NIKE-256\n");
-  printf("Future profiles: NIKE-384, NIKE-512\n");
-  printf("NIKE-384/512 full KE disabled until NIKE-native n=2048 main flow is enabled.\n");
-  self_tests(); nike_poly_layer_tests(); run(&NIKE_128); run(&NIKE_192); run(&NIKE_256); return 0; }
+  printf("Supported full KE profiles: NIKE-128, NIKE-192, NIKE-256, NIKE-384, NIKE-512\n");
+  self_tests(); nike_poly_layer_tests(); run(&NIKE_128); run(&NIKE_192); run(&NIKE_256); run(&NIKE_384); run(&NIKE_512); return 0; }
