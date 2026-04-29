@@ -16,5 +16,9 @@ int nike_poly_unpack_bits(nike_poly *out, const uint8_t *in, size_t inlen, unsig
 void nike_poly_mul_schoolbook(nike_poly *out, const nike_poly *a, const nike_poly *b, const nike_params *params);
 void nike_poly_mul_ntt(nike_poly *out, const nike_poly *a, const nike_poly *b, const nike_params *params);
 void nike_poly_mul(nike_poly *out, const nike_poly *a, const nike_poly *b, const nike_params *params, int backend);
+void nike_poly_gen_public(nike_poly *a, nike_poly *dpk, const uint8_t rho[32], const nike_params *p);
+void nike_poly_gen_dither(nike_poly *du, nike_poly *dv, const uint8_t mu[32], const nike_params *p);
+void nike_poly_sample_secret(nike_poly *s, const uint8_t seed[32], uint8_t nonce, const nike_params *p);
+
 
 #endif

@@ -88,6 +88,7 @@ static void nike_poly_layer_tests(){
   }
   for(int ni=0;ni<2;ni++){ const nike_params*p=(ni==0)?&NIKE_256:&NIKE_512; for(int ti=0;ti<2;ti++){ unsigned t=(ti==0)?10:11; for(unsigned i=0;i<p->n;i++) a.coeffs[i]=rand()&((1u<<t)-1); nike_poly_pack_bits(buf,sizeof(buf),&a,t,p); nike_poly_unpack_bits(&b,buf,(size_t)p->n*t/8,t,p); printf("nike_poly pack %s t=%u: %s\n",p->name,t,nike_poly_equal(&a,&b,p)?"PASS":"FAIL"); }}
   for(int ni=0;ni<2;ni++){ const nike_params*p=(ni==0)?&NIKE_256:&NIKE_512; for(int ti=0;ti<3;ti++){ unsigned t=(ti==0)?10:(ti==1)?11:6; for(unsigned i=0;i<p->n;i++){ a.coeffs[i]=rand()%p->q; d.coeffs[i]=rand()%p->q;} nike_poly_quantize(&c,&a,&d,t,p); nike_poly_dequantize(&b,&c,&d,t,p); int ok=1; for(unsigned i=0;i<p->n;i++){ int e=centered((int)b.coeffs[i]-(int)a.coeffs[i]); if(e<0)e=-e; int bound=(p->q + (1<<(t+1))-1)/(1<<(t+1))+1; if(e>bound){ok=0;break;}} printf("nike_poly qdq %s t=%u: %s\n",p->name,t,ok?"PASS":"FAIL"); }}
+  for(int pi=0;pi<5;pi++){ const nike_params*p=arr[pi]; uint8_t seed[32]={9}; nike_poly_gen_public(&a,&b,seed,p); nike_poly_gen_public(&c,&d,seed,p); printf("nike_poly gen public %s: %s\n",p->name,nike_poly_equal(&a,&c,p)&&nike_poly_equal(&b,&d,p)?"PASS":"FAIL"); nike_poly_gen_dither(&a,&b,seed,p); nike_poly_gen_dither(&c,&d,seed,p); printf("nike_poly gen dither %s: %s\n",p->name,nike_poly_equal(&a,&c,p)&&nike_poly_equal(&b,&d,p)?"PASS":"FAIL"); }
 }
 
 int main(){ self_tests(); nike_poly_layer_tests(); run(&NIKE_128); run(&NIKE_192); run(&NIKE_256); return 0; }
