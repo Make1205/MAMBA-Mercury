@@ -68,7 +68,7 @@ static int16_t LDDecode(int32_t xi0, int32_t xi1, int32_t xi2, int32_t xi3)
 }
 
 
-void helprec(poly *c, const poly *v, const unsigned char *seed, unsigned char nonce)
+void helprec_kappa(poly *c, const poly *v, const unsigned char *seed, unsigned char nonce, unsigned kappa)
 {
   int32_t v0[4], v1[4], v_tmp[4], k;
   unsigned char rbit;
@@ -82,7 +82,7 @@ void helprec(poly *c, const poly *v, const unsigned char *seed, unsigned char no
 
   crypto_stream_chacha20(rand,32,n,seed);
  
-  for(i=0; i<256; i++)
+  for(i=0; i<(int)kappa; i++)
   {
     rbit = (rand[i>>3] >> (i&7)) & 1;
 
@@ -106,7 +106,7 @@ void helprec(poly *c, const poly *v, const unsigned char *seed, unsigned char no
 }
 
 
-void rec(unsigned char *key, const poly *v, const poly *c)
+void rec_kappa(unsigned char *key, const poly *v, const poly *c, unsigned kappa)
 {
   int i;
   int32_t tmp[4];
@@ -114,7 +114,7 @@ void rec(unsigned char *key, const poly *v, const poly *c)
   for(i=0;i<32;i++)
     key[i] = 0;
 
-  for(i=0; i<256; i++)
+  for(i=0; i<(int)kappa; i++)
   {
     tmp[0] = 16*PARAM_Q + 8*(int32_t)v->coeffs[  0+i] - PARAM_Q * (2*c->coeffs[  0+i]+c->coeffs[768+i]);
     tmp[1] = 16*PARAM_Q + 8*(int32_t)v->coeffs[256+i] - PARAM_Q * (2*c->coeffs[256+i]+c->coeffs[768+i]);
@@ -123,4 +123,12 @@ void rec(unsigned char *key, const poly *v, const poly *c)
 
     key[i>>3] |= LDDecode(tmp[0], tmp[1], tmp[2], tmp[3]) << (i & 7);
   }
+}
+
+void helprec(poly *c, const poly *v, const unsigned char *seed, unsigned char nonce) {
+  helprec_kappa(c, v, seed, nonce, 256);
+}
+
+void rec(unsigned char *key, const poly *v, const poly *c) {
+  rec_kappa(key, v, c, 256);
 }

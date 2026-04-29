@@ -11,5 +11,7 @@
 
 void helprec(poly *c, const poly *v, const unsigned char *seed, unsigned char nonce);
 void rec(unsigned char *key, const poly *v, const poly *c);
+void helprec_kappa(poly *c, const poly *v, const unsigned char *seed, unsigned char nonce, unsigned kappa);
+void rec_kappa(unsigned char *key, const poly *v, const poly *c, unsigned kappa);
 
 #endif
