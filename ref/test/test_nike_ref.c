@@ -6,6 +6,7 @@
 #include "../quantize.h"
 #include "../error_correction.h"
 #include "../randombytes.h"
+#include "../nike_ntt.h"
 
 static int centered(int x){ x%=PARAM_Q; if(x<0)x+=PARAM_Q; if(x>PARAM_Q/2)x-=PARAM_Q; return x; }
 static void rand_poly(poly *a){ unsigned char b[2]; for(int i=0;i<PARAM_N;i++){ randombytes(b,2); a->coeffs[i]=((unsigned)b[0]|((unsigned)b[1]<<8))%PARAM_Q; } }
@@ -24,6 +25,9 @@ static void self_tests(){
   unsigned char seed[32]={7}; poly du1,dv1,du2,dv2,ap1,dp1,ap2,dp2; nike_gen_dither(&du1,&dv1,seed); nike_gen_dither(&du2,&dv2,seed); nike_gen_public(&ap1,&dp1,seed); nike_gen_public(&ap2,&dp2,seed);
   printf("GenDither reproducibility: %s\n",memcmp(&du1,&du2,sizeof(poly))||memcmp(&dv1,&dv2,sizeof(poly))?"FAIL":"PASS");
   printf("GenPublic reproducibility: %s\n",memcmp(&ap1,&ap2,sizeof(poly))||memcmp(&dp1,&dp2,sizeof(poly))?"FAIL":"PASS");
+  uint16_t v[PARAM_N],w[PARAM_N]; ok=1; for(int t=0;t<100;t++){ for(int i=0;i<PARAM_N;i++) v[i]=rand()%PARAM_Q; memcpy(w,v,sizeof(v)); nike_cyclic_ntt(w); nike_cyclic_intt(w); for(int i=0;i<PARAM_N;i++) if(v[i]!=w[i]){ ok=0; break; } if(!ok) break;}
+  printf("cyclic NTT roundtrip (100): %s\n",ok?"PASS":"FAIL");
+  printf("primitive psi (n=1024): %u\n", nike_ntt_psi());
   rand_poly(&a); rand_poly(&b); nike_mul_schoolbook(&d,&a,&b,&NIKE_256); nike_mul_coeff_ntt(&c,&a,&b); ok=!memcmp(&c,&d,sizeof(poly));
   printf("NTT mul vs schoolbook(1 sample): %s\n",ok?"PASS":"FAIL");
   for(int ki=0;ki<3;ki++){ unsigned kappa=(ki==0)?128:(ki==1)?192:256; unsigned char key1[32]={0},key2[32]={0},no[32]={0}; rand_poly(&a); helprec_kappa(&b,&a,no,0,kappa); rec_kappa(key1,&a,&b,kappa); rec_kappa(key2,&a,&b,kappa); printf("D4 identity kappa=%u: %s\n",kappa,memcmp(key1,key2,32)?"FAIL":"PASS"); }

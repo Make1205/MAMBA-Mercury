@@ -4,6 +4,7 @@
 #include "fips202.h"
 #include "randombytes.h"
 #include "poly.h"
+#include "nike_ntt.h"
 #include <string.h>
 
 const nike_params NIKE_128={"NIKE-128",10,10,6,128};
@@ -25,7 +26,7 @@ static void domain_uniform(poly *r,const unsigned char *seed,const char *tag){ u
 
 void nike_gen_public(poly *a, poly *dpk, const unsigned char rho[32]){ domain_uniform(a,rho,"NIKE-A"); domain_uniform(dpk,rho,"NIKE-DPK"); }
 void nike_gen_dither(poly *du, poly *dv, const unsigned char mu[32]){ domain_uniform(du,mu,"NIKE-DU"); domain_uniform(dv,mu,"NIKE-DV"); }
-void nike_mul_coeff_ntt(poly *out,const poly *a,const poly *b){ poly ta=*a,tb=*b; poly_ntt(&ta); poly_ntt(&tb); poly_pointwise(out,&ta,&tb); poly_invntt(out); for(int i=0;i<PARAM_N;i++){ out->coeffs[i]%=PARAM_Q; }}
+void nike_mul_coeff_ntt(poly *out,const poly *a,const poly *b){ nike_mul_negacyclic_ntt(out,a,b); }
 
 void nike_mul_schoolbook(poly *out, const poly *a, const poly *b, const nike_params *params){ (void)params; int64_t acc[PARAM_N]={0}; for(int i=0;i<PARAM_N;i++){ for(int j=0;j<PARAM_N;j++){ int k=i+j; int64_t v=(int64_t)a->coeffs[i]*(int64_t)b->coeffs[j]; if(k<PARAM_N) acc[k]+=v; else acc[k-PARAM_N]-=v; } } for(int i=0;i<PARAM_N;i++){ int64_t v=acc[i]%PARAM_Q; if(v<0) v+=PARAM_Q; out->coeffs[i]=(uint16_t)v; }}
 
