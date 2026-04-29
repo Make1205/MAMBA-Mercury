@@ -1,7 +1,7 @@
 CC = /usr/bin/gcc
 CFLAGS = -Wall -Wextra -O3 -fomit-frame-pointer -msse2avx -march=corei7-avx
 
-HEADERS = crypto_stream_chacha20.h params.h poly.h randombytes.h ntt.h error_correction.h reduce.h quantize.h nike.h nike_ntt.h nike_poly.h
+HEADERS = crypto_stream_chacha20.h params.h poly.h randombytes.h ntt.h error_correction.h reduce.h quantize.h nike.h nike_ntt.h nike_poly.h nike_params.h nike_compat.h
 CFILES  = crypto_stream_chacha20.c poly.c ntt.c precomp.c error_correction.c newhope.c reduce.c fips202.c quantize.c nike.c nike_ntt.c nike_poly.c
 
 all:	test/test_newhope \

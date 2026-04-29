@@ -3,38 +3,22 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "poly.h"
+#include "nike_params.h"
 #include "nike_poly.h"
-
-typedef struct {
-  const char *name;
-  unsigned classic;
-  unsigned quantum;
-  unsigned n;
-  unsigned q;
-  unsigned eta_s;
-  unsigned eta_r;
-  unsigned t_pk, t_u, t_v;
-  unsigned kappa;
-  unsigned ss_bytes;
-  unsigned ma_bytes;
-  unsigned mb_bytes;
-} nike_params;
 
 typedef struct { poly s; nike_params p; } nike_state;
 
-extern const nike_params NIKE_128;
-extern const nike_params NIKE_192;
-extern const nike_params NIKE_256;
-extern const nike_params NIKE_384;
-extern const nike_params NIKE_512;
+#define NIKE_128 NIKE_128_PARAMS
+#define NIKE_192 NIKE_192_PARAMS
+#define NIKE_256 NIKE_256_PARAMS
+#define NIKE_384 NIKE_384_PARAMS
+#define NIKE_512 NIKE_512_PARAMS
 
 size_t nike_ma_bytes(const nike_params *p);
 size_t nike_mb_bytes(const nike_params *p);
-
 void nike_init(nike_state *st, unsigned char *M_A, const nike_params *p);
 void nike_resp(unsigned char *M_B, unsigned char *K_B, const unsigned char *M_A, const nike_params *p);
 void nike_derive(unsigned char *K_A, const nike_state *st, const unsigned char *M_A, const unsigned char *M_B);
-
 void nike_pack_bits(unsigned char *out, const poly *a, unsigned t);
 void nike_unpack_bits(poly *a, const unsigned char *in, unsigned t);
 void nike_gen_public(poly *a, poly *dpk, const unsigned char rho[32]);
