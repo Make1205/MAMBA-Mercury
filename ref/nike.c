@@ -6,6 +6,7 @@
 #include "poly.h"
 #include "nike_ntt.h"
 #include <string.h>
+#include <stdlib.h>
 
 const nike_params NIKE_128_PARAMS={"NIKE-128",128,80,1024,12289,5,5,10,10,6,128,16,1312,1440};
 const nike_params NIKE_192_PARAMS={"NIKE-192",192,96,1024,12289,5,5,11,11,6,192,24,1440,1632};
@@ -14,6 +15,13 @@ const nike_params NIKE_384_PARAMS={"NIKE-384",384,192,2048,12289,5,5,11,11,6,384
 const nike_params NIKE_512_PARAMS={"NIKE-512",512,256,2048,12289,5,5,11,11,6,512,64,2848,3360};
 
 static nike_mul_backend g_backend = NIKE_MUL_BACKEND_NTT;
+static int nike_kdf(unsigned char *out,size_t outlen,const unsigned char *nu,size_t nulen,const unsigned char *ma,size_t malen,const unsigned char *mb,size_t mblen){
+  const char lbl[]="NIKE-KDF"; unsigned ctr=0; size_t done=0; unsigned char block[32];
+  size_t inlen=(sizeof(lbl)-1)+2+4+nulen+malen+mblen; unsigned char *in=(unsigned char*)malloc(inlen); if(!in) return -1;
+  while(done<outlen){ size_t off=0; memcpy(in+off,lbl,sizeof(lbl)-1); off+=sizeof(lbl)-1; in[off++]=outlen&0xff; in[off++]=(outlen>>8)&0xff; in[off++]=ctr&0xff; in[off++]=(ctr>>8)&0xff; in[off++]=(ctr>>16)&0xff; in[off++]=(ctr>>24)&0xff; memcpy(in+off,nu,nulen); off+=nulen; memcpy(in+off,ma,malen); off+=malen; memcpy(in+off,mb,mblen); off+=mblen; sha3256(block,in,(unsigned)off); size_t take=(outlen-done<32)?(outlen-done):32; memcpy(out+done,block,take); done+=take; ctr++; }
+  free(in); return 0;
+}
+
 void nike_set_mul_backend(nike_mul_backend backend){ g_backend = backend; }
 
 size_t nike_ma_bytes(const nike_params *p){ return 32 + PARAM_N*p->t_pk/8; }
@@ -34,6 +42,6 @@ void nike_mul_coeff(poly *out,const poly *a,const poly *b){ if(g_backend==NIKE_M
 
 void nike_init(nike_state *st, unsigned char *M_A, const nike_params *p){ unsigned char rho[32],noise[32]; poly a,dpk,tmp,b; randombytes(rho,32); randombytes(noise,32); st->p=*p; nike_gen_public(&a,&dpk,rho); poly_getnoise(&st->s,noise,0); nike_mul_coeff(&tmp,&a,&st->s); poly_quantize(&b,&tmp,&dpk,p->t_pk); memcpy(M_A,rho,32); nike_pack_bits(M_A+32,&b,p->t_pk); }
 
-void nike_resp(unsigned char *M_B, unsigned char *K_B, const unsigned char *M_A, const nike_params *p){ unsigned char rho[32],mu[32],noise[32],raw[64]; poly a,dpk,b,bhat,r,du,dv,tmpu,u,uhat,tmpv,v,vhat,h; memcpy(rho,M_A,32); nike_gen_public(&a,&dpk,rho); nike_unpack_bits(&b,M_A+32,p->t_pk); poly_dequantize(&bhat,&b,&dpk,p->t_pk); randombytes(mu,32); randombytes(noise,32); poly_getnoise(&r,noise,0); nike_gen_dither(&du,&dv,mu); nike_mul_coeff(&tmpu,&a,&r); poly_quantize(&u,&tmpu,&du,p->t_u); poly_dequantize(&uhat,&u,&du,p->t_u); nike_mul_coeff(&tmpv,&bhat,&r); poly_quantize(&v,&tmpv,&dv,p->t_v); poly_dequantize(&vhat,&v,&dv,p->t_v); helprec_kappa(&h,&vhat,noise,1,p->kappa); rec_kappa(raw,&vhat,&h,p->kappa); memcpy(M_B,mu,32); nike_pack_bits(M_B+32,&u,p->t_u); for(unsigned i=0;i<p->kappa;i++) M_B[32+PARAM_N*p->t_u/8+i]=h.coeffs[i]|(h.coeffs[i+p->kappa]<<2)|(h.coeffs[i+2*p->kappa]<<4)|(h.coeffs[i+3*p->kappa]<<6); sha3256(K_B,raw,(p->kappa+7)/8); }
+void nike_resp(unsigned char *M_B, unsigned char *K_B, const unsigned char *M_A, const nike_params *p){ unsigned char rho[32],mu[32],noise[32],raw[64]; poly a,dpk,b,bhat,r,du,dv,tmpu,u,uhat,tmpv,v,vhat,h; memcpy(rho,M_A,32); nike_gen_public(&a,&dpk,rho); nike_unpack_bits(&b,M_A+32,p->t_pk); poly_dequantize(&bhat,&b,&dpk,p->t_pk); randombytes(mu,32); randombytes(noise,32); poly_getnoise(&r,noise,0); nike_gen_dither(&du,&dv,mu); nike_mul_coeff(&tmpu,&a,&r); poly_quantize(&u,&tmpu,&du,p->t_u); poly_dequantize(&uhat,&u,&du,p->t_u); nike_mul_coeff(&tmpv,&bhat,&r); poly_quantize(&v,&tmpv,&dv,p->t_v); poly_dequantize(&vhat,&v,&dv,p->t_v); helprec_kappa(&h,&vhat,noise,1,p->kappa); rec_kappa(raw,&vhat,&h,p->kappa); memcpy(M_B,mu,32); nike_pack_bits(M_B+32,&u,p->t_u); for(unsigned i=0;i<p->kappa;i++) M_B[32+PARAM_N*p->t_u/8+i]=h.coeffs[i]|(h.coeffs[i+p->kappa]<<2)|(h.coeffs[i+2*p->kappa]<<4)|(h.coeffs[i+3*p->kappa]<<6); nike_kdf(K_B,p->ss_bytes,raw,(p->kappa+7)/8,M_A,nike_ma_bytes(p),M_B,nike_mb_bytes(p)); }
 
-void nike_derive(unsigned char *K_A, const nike_state *st, const unsigned char *M_A, const unsigned char *M_B){ const nike_params *p=&st->p; unsigned char raw[64]; poly du,dv,u,uhat,w,h; (void)M_A; nike_gen_dither(&du,&dv,M_B); nike_unpack_bits(&u,M_B+32,p->t_u); poly_dequantize(&uhat,&u,&du,p->t_u); nike_mul_coeff(&w,&uhat,&st->s); for(unsigned i=0;i<p->kappa;i++){ unsigned char b=M_B[32+PARAM_N*p->t_u/8+i]; h.coeffs[i]=b&3; h.coeffs[i+p->kappa]=(b>>2)&3; h.coeffs[i+2*p->kappa]=(b>>4)&3; h.coeffs[i+3*p->kappa]=(b>>6)&3; } rec_kappa(raw,&w,&h,p->kappa); sha3256(K_A,raw,(p->kappa+7)/8); }
+void nike_derive(unsigned char *K_A, const nike_state *st, const unsigned char *M_A, const unsigned char *M_B){ const nike_params *p=&st->p; unsigned char raw[64]; poly du,dv,u,uhat,w,h; (void)M_A; nike_gen_dither(&du,&dv,M_B); nike_unpack_bits(&u,M_B+32,p->t_u); poly_dequantize(&uhat,&u,&du,p->t_u); nike_mul_coeff(&w,&uhat,&st->s); for(unsigned i=0;i<p->kappa;i++){ unsigned char b=M_B[32+PARAM_N*p->t_u/8+i]; h.coeffs[i]=b&3; h.coeffs[i+p->kappa]=(b>>2)&3; h.coeffs[i+2*p->kappa]=(b>>4)&3; h.coeffs[i+3*p->kappa]=(b>>6)&3; } rec_kappa(raw,&w,&h,p->kappa); nike_kdf(K_A,p->ss_bytes,raw,(p->kappa+7)/8,M_A,nike_ma_bytes(p),M_B,nike_mb_bytes(p)); }

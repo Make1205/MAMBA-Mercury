@@ -9,6 +9,7 @@
 #include "../nike_ntt.h"
 #include "../nike_poly.h"
 #include "../nike_compat.h"
+#include "../fips202.h"
 
 static int centered(int x){ x%=PARAM_Q; if(x<0)x+=PARAM_Q; if(x>PARAM_Q/2)x-=PARAM_Q; return x; }
 static void rand_poly(poly *a){ unsigned char b[2]; for(int i=0;i<PARAM_N;i++){ randombytes(b,2); a->coeffs[i]=((unsigned)b[0]|((unsigned)b[1]<<8))%PARAM_Q; } }
@@ -27,6 +28,7 @@ static void self_tests(){
   unsigned char seed[32]={7}; poly du1,dv1,du2,dv2,ap1,dp1,ap2,dp2; nike_gen_dither(&du1,&dv1,seed); nike_gen_dither(&du2,&dv2,seed); nike_gen_public(&ap1,&dp1,seed); nike_gen_public(&ap2,&dp2,seed);
   printf("GenDither reproducibility: %s\n",memcmp(&du1,&du2,sizeof(poly))||memcmp(&dv1,&dv2,sizeof(poly))?"FAIL":"PASS");
   printf("GenPublic reproducibility: %s\n",memcmp(&ap1,&ap2,sizeof(poly))||memcmp(&dp1,&dp2,sizeof(poly))?"FAIL":"PASS");
+  { unsigned char out1[64],out2[64],in[64]={1}; int okk=1; for(int i=0;i<5;i++){ unsigned L[5]={16,24,32,48,64}; sha3256(out1,in,64); sha3256(out2,in,64); size_t cmp=L[i]<32?L[i]:32; if(memcmp(out1,out2,cmp)) okk=0; in[0]^=1; sha3256(out2,in,64); if(!memcmp(out1,out2,cmp)) okk=0; in[0]^=1;} printf("KDF variable output self-test: %s\n",okk?"PASS":"FAIL"); }
   uint16_t v[PARAM_N],w[PARAM_N]; ok=1; for(int t=0;t<100;t++){ for(int i=0;i<PARAM_N;i++) v[i]=rand()%PARAM_Q; memcpy(w,v,sizeof(v)); nike_cyclic_ntt(w); nike_cyclic_intt(w); for(int i=0;i<PARAM_N;i++) if(v[i]!=w[i]){ ok=0; break; } if(!ok) break;}
   printf("cyclic NTT roundtrip (100): %s\n",ok?"PASS":"FAIL");
   printf("primitive psi (n=1024): %u\n", nike_ntt_psi());
@@ -57,19 +59,19 @@ static void self_tests(){
 }
 
 static int run_mode_once(const nike_params *p,int mode){
- poly a,dpk,du,dv,s,r,b,bhat,u,uhat,v,vhat,w; unsigned char rho[32],mu[32],n[32]={0},k1[32]={0},k2[32]={0};
+ poly a,dpk,du,dv,s,r,b,bhat,u,uhat,v,vhat,w; unsigned char rho[32],mu[32],n[32]={0},k1[64]={0},k2[64]={0};
  randombytes(rho,32); randombytes(mu,32); randombytes(n,32); nike_gen_public(&a,&dpk,rho); nike_gen_dither(&du,&dv,mu); poly_getnoise(&s,n,0); poly_getnoise(&r,n,1);
  nike_mul_coeff(&b,&a,&s); if(mode>=2){ poly tb=b; poly_quantize(&b,&tb,&dpk,p->t_pk); poly_dequantize(&bhat,&b,&dpk,p->t_pk);} else bhat=b;
  nike_mul_coeff(&u,&a,&r); if(mode>=2){ poly tu=u; poly_quantize(&u,&tu,&du,p->t_u); poly_dequantize(&uhat,&u,&du,p->t_u);} else uhat=u;
  nike_mul_coeff(&v,&bhat,&r); if(mode==1||mode==3){ poly tv=v; poly_quantize(&v,&tv,&dv,p->t_v); poly_dequantize(&vhat,&v,&dv,p->t_v);} else vhat=v;
- helprec_kappa(&b,&vhat,n,2,p->kappa); rec_kappa(k1,&vhat,&b,p->kappa); nike_mul_coeff(&w,&uhat,&s); rec_kappa(k2,&w,&b,p->kappa); return memcmp(k1,k2,32)==0;
+ helprec_kappa(&b,&vhat,n,2,p->kappa); rec_kappa(k1,&vhat,&b,p->kappa); nike_mul_coeff(&w,&uhat,&s); rec_kappa(k2,&w,&b,p->kappa); return memcmp(k1,k2,p->ss_bytes)==0;
 }
 
 static void run_backend(const nike_params *p, nike_mul_backend be,const char*name){
   nike_set_mul_backend(be);
   printf("backend=%s %s\n",name,p->name);
   for(int m=0;m<4;m++){ int ok=0; for(int i=0;i<1000;i++) ok+=run_mode_once(p,m); printf("%s mode%d success %d/1000\n",p->name,m,ok);}
-  printf("|M_A|=%zu |M_B|=%zu total=%zu\n",nike_ma_bytes(p),nike_mb_bytes(p),nike_ma_bytes(p)+nike_mb_bytes(p));
+  printf("ss_bytes=%u |M_A|=%zu |M_B|=%zu total=%zu\n",p->ss_bytes,nike_ma_bytes(p),nike_mb_bytes(p),nike_ma_bytes(p)+nike_mb_bytes(p));
 }
 
 static void run(const nike_params *p){
