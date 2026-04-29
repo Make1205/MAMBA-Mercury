@@ -1,0 +1,14 @@
+Instance: MAMBA-NIKE-256
+Security level: 256
+Parameter source: avx2/ optimized implementation
+Long-term public key bytes: not used by this NIKE interface
+Long-term secret key bytes: not used by this NIKE interface
+Message 1 bytes: determined by kex_get_total_msg_len_bytes path (NIKE wrapper)
+Message 2 bytes: determined by kex_get_total_msg_len_bytes path (NIKE wrapper)
+Message 3 bytes: not used by this NIKE interface
+Shared secret bytes: via kex_get_ss_len_bytes()
+Build command: make clean && make
+KAT command: ./KAT_KEX
+KAT output filename: output/KAT_KEX_MAMBA-NIKE-256.txt
+Implementation type: Optimized AVX2 (self-contained under src/)
+Current KAT_KEX status: BLOCKING ISSUE (not guaranteed passing in this round)

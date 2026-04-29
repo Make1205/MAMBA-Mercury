@@ -1,25 +1,10 @@
-# Implementations
+# API_PKC Implementations
 
-This directory groups implementation artifacts for MAMBA-NIKE.
-
-NIKE was previously developed under the working name Mercury.
-
-## Scope of this update
-
-This round only performs structure and naming normalization.
-KEX interface adaptation and KAT execution/verification are deferred to later
-steps.
-
-## Current organization
-
-- `Reference_Implementation/`: existing reference-side material currently present.
-- `Optimized_Implementation/`: reserved for real optimized instances already present.
-- `Additional_Implementation/`: reserved for supplementary real instances already present.
-
-## Formal instance names
-
-- MAMBA-NIKE-128
-- MAMBA-NIKE-192
-- MAMBA-NIKE-256
-- MAMBA-NIKE-384
-- MAMBA-NIKE-512
+Rules:
+- Each instance directory must build independently with `make clean` and `make`.
+- Each instance must contain official interface files: `KAT_KEX.c`, `KEX_AlgorithmInstance.c/.h`, `drng.c/.h`, `auxfunc.c/.h`.
+- Official files (`KAT_KEX.c`, `drng.*`, `auxfunc.*`) should not be modified in content.
+- Randomness must be bridged through official DRNG context.
+- Hash/XOF/KDF adaptation should converge to official auxfunc path in follow-up steps.
+- `Reference_Implementation` sources originate from repository root `ref/`.
+- `Optimized_Implementation` sources originate from repository root `avx2/`, but each submission instance is self-contained.
