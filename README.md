@@ -41,3 +41,24 @@ Variable output KDF is used (`ss_bytes = classic/8`):
 - NIKE-256 = 32
 - NIKE-384 = 48
 - NIKE-512 = 64
+
+## One-shot correctness and speed runner
+Run from repo root:
+
+```bash
+make clean
+make
+make test-all-fast
+```
+
+Artifacts:
+- `build/mamba_nike_test_all.txt`
+- `build/mamba_nike_test_all.csv`
+
+The CSV/TXT rows use:
+`profile, implementation, correctness, init_cycles, resp_cycles, derive_cycles, MA_bytes, MB_bytes, total_bytes, ss_bytes`.
+
+AVX2 status is reported from actual build/run results:
+- `implementation=avx2-mixed` when AVX2 target runs with mixed/fallback NIKE path.
+- `implementation=avx2` if full native AVX2 NIKE path is available.
+- `correctness=build_failed` if AVX2 benchmark target cannot be built.

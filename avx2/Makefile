@@ -1,5 +1,6 @@
 CC = /usr/bin/gcc
 CFLAGS = -Wall -Wextra -O3 -fomit-frame-pointer -msse2avx -march=corei7-avx
+LDFLAGS += -no-pie
 
 HEADERS = crypto_stream_chacha20.h params.h poly.h randombytes.h ntt.h error_correction.h crypto_hash_sha256.h  fips202.h crypto_stream_aes256ctr.h
 CFILES  = crypto_stream_chacha20.c poly.c precomp.c error_correction.c newhope.c crypto_hash_sha256.c chacha.S cbd.s consts.c fips202.c omegas.c ntt_double.s pwmul.s bitrev.s crypto_stream_aes256ctr.o hr.s rec.s
@@ -8,19 +9,20 @@ all:	test/test_newhope \
 			test/speed  \
 			test/testvectors \
 			test/test_statistical \
+			test/test_nike_avx2 \
 
 
 test/test_newhope: $(HEADERS) $(CFILES) test/test_newhope.c randombytes.c
-	$(CC) $(CFLAGS) $(CFILES) test/test_newhope.c randombytes.c -o $@
+	$(CC) $(CFLAGS) $(CFILES) test/test_newhope.c randombytes.c -o $@ $(LDFLAGS)
 
 test/test_statistical: $(HEADERS) $(CFILES) test/test_statistical.c randombytes.c
-	$(CC) $(CFLAGS) $(CFILES) -DSTATISTICAL_TEST randombytes.c test/test_statistical.c -o $@
+	$(CC) $(CFLAGS) $(CFILES) -DSTATISTICAL_TEST randombytes.c test/test_statistical.c -o $@ $(LDFLAGS)
 
 test/speed: $(HEADERS) $(CFILES) test/speed.c cpucycles.c randombytes.c
-	$(CC) $(CFLAGS) $(CFILES) test/speed.c cpucycles.c randombytes.c -o $@
+	$(CC) $(CFLAGS) $(CFILES) test/speed.c cpucycles.c randombytes.c -o $@ $(LDFLAGS)
 
 test/testvectors: $(HEADERS) $(CFILES) test/testvectors.c
-	$(CC) $(CFLAGS) $(CFILES) -DTESTVECTORS test/testvectors.c cpucycles.c -o $@
+	$(CC) $(CFLAGS) $(CFILES) -DTESTVECTORS test/testvectors.c cpucycles.c -o $@ $(LDFLAGS)
 
 crypto_stream_aes256ctr.o: crypto_stream_aes256ctr.c
 	$(CC) -c -m64 -march=native -mtune=native -O3 -fomit-frame-pointer $^ -o $@
@@ -40,3 +42,9 @@ clean:
 	-rm test/speed
 	-rm test/testvectors
 
+
+
+REF_NIKE_CFILES = ../ref/nike.c ../ref/nike_poly.c ../ref/nike_ntt.c ../ref/quantize.c ../ref/error_correction.c ../ref/fips202.c ../ref/reduce.c ../ref/poly.c ../ref/ntt.c ../ref/precomp.c ../ref/newhope.c ../ref/crypto_stream_chacha20.c ../ref/randombytes.c
+
+test/test_nike_avx2: ../ref/nike.h ../ref/nike_poly.h ../ref/nike_ntt.h ../ref/nike_params.h ../ref/nike_compat.h test/test_nike_avx2.c cpucycles.c
+	$(CC) $(CFLAGS) -I../ref $(REF_NIKE_CFILES) cpucycles.c test/test_nike_avx2.c -o $@ $(LDFLAGS)

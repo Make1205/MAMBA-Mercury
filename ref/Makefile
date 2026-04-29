@@ -9,6 +9,7 @@ all:	test/test_newhope \
 			test/speed  \
 			test/testvectors \
 			test/test_nike_ref \
+			test/test_nike_bench \
 
 test/test_newhope: $(HEADERS) $(CFILES) test/test_newhope.c randombytes.c
 	$(CC) $(CFLAGS) $(CFILES) randombytes.c test/test_newhope.c -o $@
@@ -35,3 +36,7 @@ clean:
 
 test/test_nike_ref: $(HEADERS) $(CFILES) test/test_nike_ref.c cpucycles.c randombytes.c
 	$(CC) $(CFLAGS) $(CFILES) randombytes.c cpucycles.c test/test_nike_ref.c -o $@
+
+
+test/test_nike_bench: $(HEADERS) $(CFILES) test/test_nike_bench.c cpucycles.c randombytes.c
+	$(CC) $(CFLAGS) $(CFILES) randombytes.c cpucycles.c test/test_nike_bench.c -o $@

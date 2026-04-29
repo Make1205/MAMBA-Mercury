@@ -5,3 +5,10 @@ ref/test/test_newhope
 ref/test/test_statistical
 ref/test/testvectors
 ref/test/speed
+ref/test/test_nike_bench
+avx2/*.o
+avx2/test/test_newhope
+avx2/test/test_statistical
+avx2/test/testvectors
+avx2/test/speed
+avx2/test/test_nike_avx2
