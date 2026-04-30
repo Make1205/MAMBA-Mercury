@@ -1,0 +1,9 @@
+# MAMBA-NIKE-192
+
+- Instance: MAMBA-NIKE-192
+- Security level: 192
+- Implementation type: ref
+- Build: make clean && make
+- Expected KAT command: ./KAT_KEX
+- KEX interface status: NOT READY (bridge completion pending)
+- Remaining blockers: DRNG bridge + auxfunc hash/XOF adaptation + full KEX_AlgorithmInstance mapping + final official KAT generation.

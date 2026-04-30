@@ -1,0 +1,4 @@
+# Test_Vectors
+
+Official vectors will be generated later by each instance directory using official `KAT_KEX.c` + official DRNG.
+No fake KAT files are added in this round.

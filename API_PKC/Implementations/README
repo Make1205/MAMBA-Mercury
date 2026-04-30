@@ -1,0 +1,8 @@
+# Implementations
+
+- `Reference_Implementation`: portable C reference instances (no AVX/SSE/AES-NI flags in Makefile).
+- `Optimized_Implementation`: AVX2-oriented instances (optimized flags allowed).
+- `Additional_Implementation`: placeholder for future variants.
+
+Each instance directory is self-contained with local copies of KAT/DRNG/AUX files and `src/`.
+Official `KAT_KEX.c`, `drng.c/h`, `auxfunc.c/h` must not be edited.
