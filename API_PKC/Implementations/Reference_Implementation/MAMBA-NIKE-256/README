@@ -7,3 +7,5 @@
 - Expected KAT command: ./KAT_KEX
 - KEX interface status: NOT READY (bridge completion pending)
 - Remaining blockers: DRNG bridge + auxfunc hash/XOF adaptation + full KEX_AlgorithmInstance mapping + final official KAT generation.
+
+API_PKC default build note: `src/non_api_pkc_randombytes.c` is kept only as non-API reference code and is not part of default `make`; default API_PKC randombytes is provided via `src/randombytes_api_pkc.c` (DRNG-backed).
