@@ -1,0 +1,3 @@
+#ifndef SYMMETRIC_API_PKC_H
+#define SYMMETRIC_API_PKC_H
+#endif
