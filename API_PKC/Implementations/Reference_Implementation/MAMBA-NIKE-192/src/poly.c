@@ -1,9 +1,10 @@
+#include <string.h>
 #include "poly.h"
 #include "ntt.h"
 #include "randombytes.h"
 #include "reduce.h"
-#include "fips202.h"
-#include "crypto_stream_chacha20.h"
+#include "xof_api_pkc.h"
+#include "prg_api_pkc.h"
 
 void poly_frombytes(poly *r, const unsigned char *a)
 {
@@ -67,9 +68,9 @@ void poly_uniform(poly *a, const unsigned char *seed)
   unsigned int nblocks=16;
   uint8_t buf[SHAKE128_RATE*nblocks];
 
-  shake128_absorb(state, seed, NEWHOPE_SEEDBYTES);
+  xof_api_pkc((unsigned char *) buf, sizeof(buf), seed, NEWHOPE_SEEDBYTES);
   
-  shake128_squeezeblocks((unsigned char *) buf, nblocks, state);
+  
 
   while(ctr < PARAM_N)
   {
@@ -77,10 +78,10 @@ void poly_uniform(poly *a, const unsigned char *seed)
     if(val < PARAM_Q)
       a->coeffs[ctr++] = val;
     pos += 2;
-    if(pos > SHAKE128_RATE*nblocks-2)
+    if(pos > 168*nblocks-2)
     {
       nblocks=1;
-      shake128_squeezeblocks((unsigned char *) buf,nblocks,state);
+      { unsigned char in2[NEWHOPE_SEEDBYTES+4]; memcpy(in2,seed,NEWHOPE_SEEDBYTES); in2[NEWHOPE_SEEDBYTES]=1; in2[NEWHOPE_SEEDBYTES+1]=0; in2[NEWHOPE_SEEDBYTES+2]=0; in2[NEWHOPE_SEEDBYTES+3]=0; xof_api_pkc((unsigned char *) buf,168*nblocks,in2,sizeof(in2)); }
       pos = 0;
     }
   }
@@ -104,7 +105,7 @@ void poly_getnoise(poly *r, unsigned char *seed, unsigned char nonce)
     n[i] = 0;
   n[0] = nonce;
 
-  crypto_stream_chacha20(buf,4*PARAM_N,n,seed);
+  prg_api_pkc(buf,4*PARAM_N,seed,32,n,8,0x51);
 
   for(i=0;i<PARAM_N;i++)
   {

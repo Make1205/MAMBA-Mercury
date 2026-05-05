@@ -4,9 +4,8 @@
 #include "nike.h"
 #include "poly.h"
 #include "nike_ntt.h"
-#include "fips202.h"
 #include "randombytes.h"
-#include "crypto_stream_chacha20.h"
+#include "prg_api_pkc.h"
 
 static uint16_t modq(int64_t x, unsigned q){ int64_t v=x%(int64_t)q; if(v<0) v+=q; return (uint16_t)v; }
 int nike_poly_to_oldpoly_1024(poly *out, const nike_poly *in, const nike_params *params){ if(params->n!=1024) return -1; for(unsigned i=0;i<1024;i++) out->coeffs[i]=in->coeffs[i]%params->q; return 0; }

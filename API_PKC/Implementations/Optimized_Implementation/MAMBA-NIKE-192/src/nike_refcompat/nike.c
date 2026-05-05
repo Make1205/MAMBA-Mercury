@@ -1,12 +1,11 @@
 #include "nike.h"
 #include "error_correction.h"
-#include "fips202.h"
 #include "randombytes.h"
 #include "nike_compat.h"
 #include "poly.h"
 #include <string.h>
 #include <stdlib.h>
-#include "crypto_stream_chacha20.h"
+#include "prg_api_pkc.h"
 
 const nike_params NIKE_128_PARAMS={"NIKE-128",128,80,1024,12289,5,5,10,10,6,128,16,1312,1440};
 const nike_params NIKE_192_PARAMS={"NIKE-192",192,96,1024,12289,5,5,11,10,6,192,24,1440,1504};
@@ -54,7 +53,7 @@ static int32_t ng(int32_t x){
   return nabs32(t - x);
 }
 static int16_t nLDDecode(int32_t a,int32_t b,int32_t c,int32_t d){ int32_t t=ng(a)+ng(b)+ng(c)+ng(d)-8*12289; t>>=31; return t&1; }
-static void nike_helprec_kappa_poly(nike_poly *c,const nike_poly *v,const unsigned char *seed,unsigned char nonce,const nike_params *p){ int32_t v0[4],v1[4],vt[4],k; unsigned char rand[32],n[8]={0}; n[7]=nonce; crypto_stream_chacha20(rand,32,n,seed); for(unsigned i=0;i<p->kappa;i++){ unsigned char rbit=(rand[i>>3]>>(i&7))&1; k=nf(v0,v1,8*v->coeffs[i]+4*rbit); k+=nf(v0+1,v1+1,8*v->coeffs[p->kappa+i]+4*rbit); k+=nf(v0+2,v1+2,8*v->coeffs[2*p->kappa+i]+4*rbit); k+=nf(v0+3,v1+3,8*v->coeffs[3*p->kappa+i]+4*rbit); k=(2*(int32_t)p->q-1-k)>>31; vt[0]=((~k)&v0[0])^(k&v1[0]); vt[1]=((~k)&v0[1])^(k&v1[1]); vt[2]=((~k)&v0[2])^(k&v1[2]); vt[3]=((~k)&v0[3])^(k&v1[3]); c->coeffs[i]=(vt[0]-vt[3])&3; c->coeffs[p->kappa+i]=(vt[1]-vt[3])&3; c->coeffs[2*p->kappa+i]=(vt[2]-vt[3])&3; c->coeffs[3*p->kappa+i]=(-k+2*vt[3])&3; }}
+static void nike_helprec_kappa_poly(nike_poly *c,const nike_poly *v,const unsigned char *seed,unsigned char nonce,const nike_params *p){ int32_t v0[4],v1[4],vt[4],k; unsigned char rand[32],n[8]={0}; n[7]=nonce; prg_api_pkc(rand,32,seed,32,n,8,0x53); for(unsigned i=0;i<p->kappa;i++){ unsigned char rbit=(rand[i>>3]>>(i&7))&1; k=nf(v0,v1,8*v->coeffs[i]+4*rbit); k+=nf(v0+1,v1+1,8*v->coeffs[p->kappa+i]+4*rbit); k+=nf(v0+2,v1+2,8*v->coeffs[2*p->kappa+i]+4*rbit); k+=nf(v0+3,v1+3,8*v->coeffs[3*p->kappa+i]+4*rbit); k=(2*(int32_t)p->q-1-k)>>31; vt[0]=((~k)&v0[0])^(k&v1[0]); vt[1]=((~k)&v0[1])^(k&v1[1]); vt[2]=((~k)&v0[2])^(k&v1[2]); vt[3]=((~k)&v0[3])^(k&v1[3]); c->coeffs[i]=(vt[0]-vt[3])&3; c->coeffs[p->kappa+i]=(vt[1]-vt[3])&3; c->coeffs[2*p->kappa+i]=(vt[2]-vt[3])&3; c->coeffs[3*p->kappa+i]=(-k+2*vt[3])&3; }}
 static void nike_rec_kappa_poly(unsigned char *key,const nike_poly *v,const nike_poly *c,const nike_params *p){ for(unsigned i=0;i<p->kappa/8;i++) key[i]=0; for(unsigned i=0;i<p->kappa;i++){ int32_t t0=16*p->q+8*(int32_t)v->coeffs[i]-p->q*(2*c->coeffs[i]+c->coeffs[3*p->kappa+i]); int32_t t1=16*p->q+8*(int32_t)v->coeffs[p->kappa+i]-p->q*(2*c->coeffs[p->kappa+i]+c->coeffs[3*p->kappa+i]); int32_t t2=16*p->q+8*(int32_t)v->coeffs[2*p->kappa+i]-p->q*(2*c->coeffs[2*p->kappa+i]+c->coeffs[3*p->kappa+i]); int32_t t3=16*p->q+8*(int32_t)v->coeffs[3*p->kappa+i]-p->q*(c->coeffs[3*p->kappa+i]); key[i>>3]|=nLDDecode(t0,t1,t2,t3)<<(i&7); }}
 
 void nike_set_mul_backend(nike_mul_backend backend){ g_backend = backend; }

@@ -80,7 +80,7 @@ void helprec_kappa(poly *c, const poly *v, const unsigned char *seed, unsigned c
     n[i] = 0;
   n[7] = nonce;
 
-  crypto_stream_chacha20(rand,32,n,seed);
+  prg_api_pkc(rand,32,seed,32,n,8,0x53);
  
   for(i=0; i<(int)kappa; i++)
   {

@@ -1,7 +1,7 @@
 #include "poly.h"
 #include "randombytes.h"
 #include "error_correction.h"
-#include "fips202.h"
+#include "prg_api_pkc.h"
 
 static void encode_a(unsigned char *r, const poly *pk, const unsigned char *seed)
 {
@@ -104,7 +104,7 @@ void newhope_sharedb(unsigned char *sharedkey, unsigned char *send, const unsign
   rec(sharedkey, &v, &c);
 
 #ifndef STATISTICAL_TEST 
-  sha3256(sharedkey, sharedkey, 32);
+  hash_api_pkc(sharedkey, sharedkey, 32);
 #endif
 }
 
@@ -121,6 +121,6 @@ void newhope_shareda(unsigned char *sharedkey, const poly *sk, const unsigned ch
   rec(sharedkey, &v, &c);
 
 #ifndef STATISTICAL_TEST 
-  sha3256(sharedkey, sharedkey, 32); 
+  hash_api_pkc(sharedkey, sharedkey, 32); 
 #endif
 }
