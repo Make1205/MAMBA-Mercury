@@ -1,59 +1,53 @@
 # MAMBA-NIKE API_PKC Integration Audit (Final)
 
-## Overall status
-Final regression status is **PASS** for the ten-instance API_PKC submission package:
+## Overall conclusion
+Overall final audit conclusion is **PASS**.
 
-- Five Reference instances (`128/192/256/384/512`) build and run `./KAT_KEX` successfully.
-- Five Optimized instances (`128/192/256/384/512`) build and run `./KAT_KEX` successfully.
-- For all five security levels, Reference outputs match `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-*.txt` byte-for-byte.
-- For all five security levels, Optimized outputs also match the same official `Test_Vectors` byte-for-byte.
+## Final full regression summary (128/192/256/384/512)
+- Five Reference instances: `make clean && make && ./KAT_KEX` all PASS.
+- Five Optimized instances: `make clean && make && ./KAT_KEX` all PASS.
+- Five Reference vs Test_Vectors comparisons all `cmp=0`.
+- Five Optimized vs Test_Vectors comparisons all `cmp=0`.
+- Five Reference vs Optimized comparisons all `cmp=0`.
 
-## Final package structure and scope
-- Final API_PKC KEX instances are organized under:
-  - `API_PKC/Implementations/Reference_Implementation/MAMBA-NIKE-{128,192,256,384,512}`
-  - `API_PKC/Implementations/Optimized_Implementation/MAMBA-NIKE-{128,192,256,384,512}`
-- Official KAT files are:
-  - `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-128.txt`
-  - `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-192.txt`
-  - `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-256.txt`
-  - `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-384.txt`
-  - `API_PKC/Test_Vectors/KAT_KEX_MAMBA-NIKE-512.txt`
+Detailed cmp results:
+- `REF128_TV_CMP=0`, `REF192_TV_CMP=0`, `REF256_TV_CMP=0`, `REF384_TV_CMP=0`, `REF512_TV_CMP=0`
+- `OPT128_TV_CMP=0`, `OPT192_TV_CMP=0`, `OPT256_TV_CMP=0`, `OPT384_TV_CMP=0`, `OPT512_TV_CMP=0`
+- `REF_OPT_128_CMP=0`, `REF_OPT_192_CMP=0`, `REF_OPT_256_CMP=0`, `REF_OPT_384_CMP=0`, `REF_OPT_512_CMP=0`
 
-## Official-file baseline note
-No external official baseline package was available in-tree for cryptographic hash-by-hash source verification.
-Therefore:
+## Test_Vectors integrity check
+For each of the five KAT files under `API_PKC/Test_Vectors/`:
+- `Count = 10`
+- `nul=False` (no NUL byte)
 
-- We **cannot** claim 100% identity against an external official template baseline.
-- We can state that the final repair chain did **not** introduce new edits to `KAT_KEX.c`, `drng.c/.h`, or `auxfunc.c/.h` during final stabilization and validation steps.
+## Symbol audit (legacy primitive symbols)
+For all ten built `KAT_KEX` executables (5 Reference + 5 Optimized), running:
+- `nm KAT_KEX | rg "shake|Shake|SHAKE|Keccak|keccak|sha3|sha3256|sha256|crypto_stream|chacha|ChaCha|aes256ctr|AES"`
 
-## Randomness path audit
-- Default build path uses the API_PKC DRNG bridge via `src/randombytes_api_pkc.c`:
-  - `extern DRNG_ctx drng_algorithm;`
-  - `get_random_number(&drng_algorithm, buf, len*8);`
-- `src/non_api_pkc_randombytes.c` exists in instance trees but is filtered out of default Makefile source sets and is **not in default build path**.
+Result: no matches in all ten cases (`rg` return code `1` each), i.e. no legacy primitive symbols detected in these final binaries.
 
-## Hash / XOF / KDF classification (no code changes in this phase)
-### Already adapted through API_PKC helpers
-- Adapter files use:
-  - `sm3hash` (hash adapter)
-  - `pseudohash` (KDF adapter)
-  - `pseudoXOF` (XOF adapter)
+## Default build-path audit (Makefile-level)
+The ten instances use API_PKC adapter path in default KAT build:
+- randomness: `randombytes_api_pkc.c` (ultimately `get_random_number(&drng_algorithm, ...)`)
+- hash/XOF/KDF/PRG adapters: `hash_api_pkc.c`, `xof_api_pkc.c`, `kdf_api_pkc.c`, `prg_api_pkc.c`
+- plus `drng.c`, `auxfunc.c`
 
-### Still present and compiled in default paths
-- `fips202` / Keccak / SHAKE-related sources.
-- `crypto_stream_chacha20` and (in some trees) AES-CTR/SHA-256 helper sources.
-- In Optimized instances, `src/nike_refcompat/*` (including `fips202.c`) is explicitly compiled by default.
+Legacy primitive source files may still exist in repository trees, but are classified as **UNUSED_OR_NONDEFAULT** for the final default KAT regression target. They are not treated as active migration blockers in this final audit.
 
-### Classification
-- These are retained as **NEEDS REVIEW** items for future hardening/normalization because they are tied to ref-compatible core paths and legacy algorithm components.
-- They are intentionally **not replaced** in this final packaging phase to avoid protocol/semantic drift after KAT closure.
+## auxfunc backend note
+Current default adapter backend path is:
+- hash: `sm3hash`
+- kdf: `pseudohash`
+- xof: `pseudoXOF`
 
-## Ref/Opt boundary summary
-- Reference instance Makefiles do not use AVX2/AES/SSE aggressive optimization flags.
-- Optimized instance Makefiles do use AVX2/AES/SSE flags as expected.
-- Optimized instance build paths do not pull source files from `../../Reference_Implementation`.
+## MUST_FIX / blocking issues
+- `MUST_FIX`: **empty**.
+- Blocking issue: **none**.
 
-## Legacy template directories
-- `API_PKC/Implementations/Reference_Implementation/AlgorithmInstance` still exists as a historical template/demo subtree.
-- It is not part of the final ten-instance default KAT build path.
-- Classified as a **cleanup candidate**; not removed in final validation phase.
+## Non-blocking review item
+- Recommendation: script the ten-instance regression and/or integrate it into CI for routine reproducibility checks.
+
+## Official-file statement (conservative)
+- This audit did not perform external hash-baseline comparison against an upstream official API_PKC template package; therefore it does **not** claim historical never-modified status for official files.
+- During the final auxfunc migration regression phase, no further edits were made to `KAT_KEX.c`, `drng.c/.h`, or `auxfunc.c/.h`.
+- Current ten instances complete official `KAT_KEX` regression using these files.
