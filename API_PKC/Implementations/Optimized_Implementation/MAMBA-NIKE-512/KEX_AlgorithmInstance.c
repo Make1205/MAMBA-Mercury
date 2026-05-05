@@ -2,7 +2,7 @@
 #include "src/nike_refcompat/nike.h"
 #include <string.h>
 
-typedef struct { unsigned char st_s[sizeof(poly)]; unsigned char ma[4000]; unsigned long long ma_len; int ready; unsigned char reserved[2060]; } sta_t;
+typedef struct { unsigned char st_s[sizeof(nike_poly)]; unsigned char ma[4000]; unsigned long long ma_len; int ready; unsigned char reserved[2060]; } sta_t;
 typedef struct { unsigned char mb[4000]; unsigned char ss[64]; unsigned long long mb_len; int ready; } stb_t;
 
 static const nike_params* P(void){ return &NIKE_512; }

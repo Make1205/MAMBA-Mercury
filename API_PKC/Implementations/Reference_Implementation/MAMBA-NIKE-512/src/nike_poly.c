@@ -4,9 +4,9 @@
 #include "nike.h"
 #include "poly.h"
 #include "nike_ntt.h"
-#include "fips202.h"
+#include "xof_api_pkc.h"
 #include "randombytes.h"
-#include "crypto_stream_chacha20.h"
+#include "prg_api_pkc.h"
 
 static uint16_t modq(int64_t x, unsigned q){ int64_t v=x%(int64_t)q; if(v<0) v+=q; return (uint16_t)v; }
 int nike_poly_to_oldpoly_1024(poly *out, const nike_poly *in, const nike_params *params){ if(params->n!=1024) return -1; for(unsigned i=0;i<1024;i++) out->coeffs[i]=in->coeffs[i]%params->q; return 0; }
@@ -23,14 +23,14 @@ void nike_poly_mul_ntt(nike_poly *out,const nike_poly *a,const nike_poly *b,cons
 void nike_poly_mul(nike_poly *out,const nike_poly *a,const nike_poly *b,const nike_params *params,int backend){ if(backend==1) nike_poly_mul_schoolbook(out,a,b,params); else nike_poly_mul_ntt(out,a,b,params); }
 
 static void nike_domain_uniform(nike_poly *r,const unsigned char *seed,const char *tag,const nike_params *p){
-  uint64_t st[25]; uint8_t in[64]={0}; memcpy(in,seed,32); size_t tl=strlen(tag); memcpy(in+32,tag,tl>31?31:tl);
-  shake128_absorb(st,in,64); unsigned ctr=0,pos=0; uint8_t buf[SHAKE128_RATE]; shake128_squeezeblocks(buf,1,st);
-  while(ctr<p->n){ uint16_t v=(buf[pos]|((uint16_t)buf[pos+1]<<8))&0x3fff; if(v<p->q) r->coeffs[ctr++]=v; pos+=2; if(pos>SHAKE128_RATE-2){ shake128_squeezeblocks(buf,1,st); pos=0; }}
+  uint8_t in[64]={0}; memcpy(in,seed,32); size_t tl=strlen(tag); memcpy(in+32,tag,tl>31?31:tl);
+  unsigned ctr=0,pos=0; uint8_t buf[168]; xof_api_pkc(buf,sizeof(buf),in,64);
+  while(ctr<p->n){ uint16_t v=(buf[pos]|((uint16_t)buf[pos+1]<<8))&0x3fff; if(v<p->q) r->coeffs[ctr++]=v; pos+=2; if(pos>166){ xof_api_pkc(buf,sizeof(buf),in,64); pos=0; }}
 }
 
 void nike_poly_gen_public(nike_poly *a, nike_poly *dpk, const uint8_t rho[32], const nike_params *p){ nike_domain_uniform(a,rho,"NIKE-A",p); nike_domain_uniform(dpk,rho,"NIKE-DPK",p); }
 void nike_poly_gen_dither(nike_poly *du, nike_poly *dv, const uint8_t mu[32], const nike_params *p){ nike_domain_uniform(du,mu,"NIKE-DU",p); nike_domain_uniform(dv,mu,"NIKE-DV",p); }
 void nike_poly_sample_secret(nike_poly *s, const uint8_t seed[32], uint8_t nonce, const nike_params *p){
-  unsigned char buf[4*NIKE_MAX_N]; uint32_t *tp=(uint32_t*)buf,t,d,a,b; unsigned char n[8]={0}; n[0]=nonce; crypto_stream_chacha20(buf,4*p->n,n,seed);
+  unsigned char buf[4*NIKE_MAX_N]; uint32_t *tp=(uint32_t*)buf,t,d,a,b; unsigned char n[8]={0}; n[0]=nonce; prg_api_pkc(buf,4*p->n,seed,32,n,8,0x52);
   for(unsigned i=0;i<p->n;i++){ t=tp[i]; d=0; for(int j=0;j<8;j++) d += (t>>j)&0x01010101; a=((d>>8)&0xff)+(d&0xff); b=(d>>24)+((d>>16)&0xff); s->coeffs[i]=(a + p->q - b)%p->q; }
 }
