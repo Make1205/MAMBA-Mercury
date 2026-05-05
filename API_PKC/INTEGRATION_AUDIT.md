@@ -34,11 +34,24 @@ The ten instances use API_PKC adapter path in default KAT build:
 
 Legacy primitive source files may still exist in repository trees, but are classified as **UNUSED_OR_NONDEFAULT** for the final default KAT regression target. They are not treated as active migration blockers in this final audit.
 
+
+## Reference legacy filename clarification
+- `src/crypto_hash_sha256.c` is absent in all five Reference instance `src/` directories (128/192/256/384/512).
+- `src/crypto_stream_aes256ctr.c` is absent in all five Reference instance `src/` directories (128/192/256/384/512).
+- Because those two files are absent, Reference-128/192/256/384 do not need to add filter-out entries for those names.
+- In Reference-512, if filter-out contains those names, it is defensive exclusion only; it does not imply file presence or compilation.
+- Default build-path and `nm` results confirm legacy primitives do not enter final `KAT_KEX` binaries.
+
 ## auxfunc backend note
 Current default adapter backend path is:
 - hash: `sm3hash`
 - kdf: `pseudohash`
 - xof: `pseudoXOF`
+
+
+## 512 determinism fix status
+- State determinism fix commit: `7a20fec`
+- Verification retained in final regression context: `OPT_STABLE=0`, `REF_OPT_CMP=0`, `TV_CMP=0`.
 
 ## MUST_FIX / blocking issues
 - `MUST_FIX`: **empty**.
