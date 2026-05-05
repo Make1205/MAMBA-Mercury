@@ -1,5 +1,5 @@
 CC=/usr/bin/gcc
-CFLAGS=-Wall -Wextra -O3 -fomit-frame-pointer -msse2avx -march=corei7-avx -mavx2 -maes -msse2 -mssse3 -Isrc -Isrc/nike_refcompat
+CFLAGS=-Wall -Wextra -O2 -fomit-frame-pointer -msse2avx -march=corei7-avx -mavx2 -maes -msse2 -mssse3 -Isrc -Isrc/nike_refcompat
 
 NIKE_REFCOMPAT_CFILES = src/nike_refcompat/nike.c src/nike_refcompat/nike_poly.c src/nike_refcompat/nike_ntt.c src/nike_refcompat/quantize.c src/nike_refcompat/error_correction.c src/nike_refcompat/reduce.c src/nike_refcompat/poly.c src/nike_refcompat/ntt.c src/nike_refcompat/precomp.c
 
