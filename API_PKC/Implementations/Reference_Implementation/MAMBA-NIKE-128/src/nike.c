@@ -4,6 +4,7 @@
 #include "randombytes.h"
 #include "nike_compat.h"
 #include "poly.h"
+#include "hash_api_pkc.h"
 #include <string.h>
 #include <stdlib.h>
 #include "crypto_stream_chacha20.h"
@@ -18,7 +19,7 @@ static nike_mul_backend g_backend = NIKE_MUL_BACKEND_NTT;
 static int nike_kdf(unsigned char *out,size_t outlen,const unsigned char *nu,size_t nulen,const unsigned char *ma,size_t malen,const unsigned char *mb,size_t mblen){
   const char lbl[]="NIKE-KDF"; unsigned ctr=0; size_t done=0; unsigned char block[32];
   size_t inlen=(sizeof(lbl)-1)+2+4+nulen+malen+mblen; unsigned char *in=(unsigned char*)malloc(inlen); if(!in) return -1;
-  while(done<outlen){ size_t off=0; memcpy(in+off,lbl,sizeof(lbl)-1); off+=sizeof(lbl)-1; in[off++]=outlen&0xff; in[off++]=(outlen>>8)&0xff; in[off++]=ctr&0xff; in[off++]=(ctr>>8)&0xff; in[off++]=(ctr>>16)&0xff; in[off++]=(ctr>>24)&0xff; memcpy(in+off,nu,nulen); off+=nulen; memcpy(in+off,ma,malen); off+=malen; memcpy(in+off,mb,mblen); off+=mblen; sha3256(block,in,(unsigned)off); size_t take=(outlen-done<32)?(outlen-done):32; memcpy(out+done,block,take); done+=take; ctr++; }
+  while(done<outlen){ size_t off=0; memcpy(in+off,lbl,sizeof(lbl)-1); off+=sizeof(lbl)-1; in[off++]=outlen&0xff; in[off++]=(outlen>>8)&0xff; in[off++]=ctr&0xff; in[off++]=(ctr>>8)&0xff; in[off++]=(ctr>>16)&0xff; in[off++]=(ctr>>24)&0xff; memcpy(in+off,nu,nulen); off+=nulen; memcpy(in+off,ma,malen); off+=malen; memcpy(in+off,mb,mblen); off+=mblen; hash_api_pkc(block,in,off); size_t take=(outlen-done<32)?(outlen-done):32; memcpy(out+done,block,take); done+=take; ctr++; }
   free(in); return 0;
 }
 
