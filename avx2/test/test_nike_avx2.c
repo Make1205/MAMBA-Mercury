@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "../cpucycles.h"
-#include "../../ref/nike.h"
+#include "../nike_refcompat/nike.h"
 
 static void run_profile(const nike_params *p, unsigned iters) {
   unsigned char MA[4096], MB[4096], KA[64], KB[64];

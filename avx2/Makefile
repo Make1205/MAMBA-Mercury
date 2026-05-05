@@ -10,6 +10,7 @@ all:	test/test_newhope \
 			test/testvectors \
 			test/test_statistical \
 			test/test_nike_avx2 \
+			test-nike-equiv-128
 
 
 test/test_newhope: $(HEADERS) $(CFILES) test/test_newhope.c randombytes.c
@@ -41,10 +42,22 @@ clean:
 	-rm test/test_statistical
 	-rm test/speed
 	-rm test/testvectors
+	-rm test/gen_nike_ref_128 test/gen_nike_avx2_128 test/ref_128.out test/avx2_128.out
 
 
 
-REF_NIKE_CFILES = ../ref/nike.c ../ref/nike_poly.c ../ref/nike_ntt.c ../ref/quantize.c ../ref/error_correction.c ../ref/fips202.c ../ref/reduce.c ../ref/poly.c ../ref/ntt.c ../ref/precomp.c ../ref/newhope.c ../ref/crypto_stream_chacha20.c ../ref/randombytes.c
+NIKE_REFCOMPAT_CFILES = nike_refcompat/nike.c nike_refcompat/nike_poly.c nike_refcompat/nike_ntt.c nike_refcompat/quantize.c nike_refcompat/error_correction.c nike_refcompat/fips202.c nike_refcompat/reduce.c nike_refcompat/poly.c nike_refcompat/ntt.c nike_refcompat/precomp.c nike_refcompat/crypto_stream_chacha20.c nike_refcompat/randombytes.c
 
-test/test_nike_avx2: ../ref/nike.h ../ref/nike_poly.h ../ref/nike_ntt.h ../ref/nike_params.h ../ref/nike_compat.h test/test_nike_avx2.c cpucycles.c
-	$(CC) $(CFLAGS) -I../ref $(REF_NIKE_CFILES) cpucycles.c test/test_nike_avx2.c -o $@ $(LDFLAGS)
+test/test_nike_avx2: nike_refcompat/nike.h nike_refcompat/nike_poly.h nike_refcompat/nike_ntt.h nike_refcompat/nike_params.h nike_refcompat/nike_compat.h test/test_nike_avx2.c cpucycles.c
+	$(CC) $(CFLAGS) -I./nike_refcompat $(NIKE_REFCOMPAT_CFILES) cpucycles.c test/test_nike_avx2.c -o $@ $(LDFLAGS)
+
+test-nike-equiv-128: test/gen_nike_ref_128 test/gen_nike_avx2_128
+	./test/gen_nike_ref_128 > test/ref_128.out
+	./test/gen_nike_avx2_128 > test/avx2_128.out
+	python3 test/compare_nike_128.py test/ref_128.out test/avx2_128.out
+
+test/gen_nike_ref_128: test/gen_nike_ref_128.c test/randombytes_deterministic.c
+	$(CC) -O2 -I../ref ../ref/nike.c ../ref/nike_poly.c ../ref/nike_ntt.c ../ref/quantize.c ../ref/error_correction.c ../ref/fips202.c ../ref/reduce.c ../ref/poly.c ../ref/ntt.c ../ref/precomp.c ../ref/crypto_stream_chacha20.c test/randombytes_deterministic.c test/gen_nike_ref_128.c -o $@
+
+test/gen_nike_avx2_128: test/gen_nike_avx2_128.c
+	$(CC) -O2 -I./nike_refcompat $(NIKE_REFCOMPAT_CFILES) test/gen_nike_avx2_128.c -o $@
