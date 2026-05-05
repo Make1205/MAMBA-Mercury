@@ -40,6 +40,11 @@ Current default adapter backend path is:
 - kdf: `pseudohash`
 - xof: `pseudoXOF`
 
+
+## 512 determinism fix status
+- State determinism fix commit: `7a20fec`
+- Verification retained in final regression context: `OPT_STABLE=0`, `REF_OPT_CMP=0`, `TV_CMP=0`.
+
 ## MUST_FIX / blocking issues
 - `MUST_FIX`: **empty**.
 - Blocking issue: **none**.
