@@ -64,13 +64,9 @@ void poly_uniform(poly *a, const unsigned char *seed)
 {
   unsigned int pos=0, ctr=0;
   uint16_t val;
-  uint64_t state[25];
   unsigned int nblocks=16;
-  uint8_t buf[SHAKE128_RATE*nblocks];
-
+  uint8_t buf[168*nblocks];
   xof_api_pkc((unsigned char *) buf, sizeof(buf), seed, NEWHOPE_SEEDBYTES);
-  
-  
 
   while(ctr < PARAM_N)
   {
@@ -80,8 +76,10 @@ void poly_uniform(poly *a, const unsigned char *seed)
     pos += 2;
     if(pos > 168*nblocks-2)
     {
+      unsigned char in2[NEWHOPE_SEEDBYTES+4];
+      memcpy(in2,seed,NEWHOPE_SEEDBYTES); in2[NEWHOPE_SEEDBYTES]=1; in2[NEWHOPE_SEEDBYTES+1]=0; in2[NEWHOPE_SEEDBYTES+2]=0; in2[NEWHOPE_SEEDBYTES+3]=0;
       nblocks=1;
-      { unsigned char in2[NEWHOPE_SEEDBYTES+4]; memcpy(in2,seed,NEWHOPE_SEEDBYTES); in2[NEWHOPE_SEEDBYTES]=1; in2[NEWHOPE_SEEDBYTES+1]=0; in2[NEWHOPE_SEEDBYTES+2]=0; in2[NEWHOPE_SEEDBYTES+3]=0; xof_api_pkc((unsigned char *) buf,168*nblocks,in2,sizeof(in2)); }
+      xof_api_pkc((unsigned char *) buf,168*nblocks,in2,sizeof(in2));
       pos = 0;
     }
   }

@@ -5,7 +5,6 @@
 #include "randombytes.h"
 #include "prg_api_pkc.h"
 #include "error_correction.h"
-#include "prg_api_pkc.h"
 #include <math.h>
 #include <stdio.h>
 

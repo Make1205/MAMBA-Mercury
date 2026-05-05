@@ -1,4 +1,5 @@
 #include "error_correction.h"
+#include "prg_api_pkc.h"
 
 //See paper for details on the error reconciliation
 
