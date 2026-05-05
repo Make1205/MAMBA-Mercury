@@ -4,7 +4,7 @@
 #include "inttypes.h"
 #include "params.h"
 #include "randombytes.h"
-#include "crypto_stream_chacha20.h"
+#include "prg_api_pkc.h"
 #include "math.h"
 #include "poly.h"
 #include <stdio.h>
