@@ -1,7 +1,6 @@
 #include "poly.h"
 #include "randombytes.h"
 #include "error_correction.h"
-#include "fips202.h"
 #include "hash_api_pkc.h"
 
 static void encode_a(unsigned char *r, const poly *pk, const unsigned char *seed)
